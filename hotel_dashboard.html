@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hotel Revenue Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0b0f1a;
+    --surface: #131929;
+    --surface2: #1a2236;
+    --border: #232e45;
+    --accent: #3b82f6;
+    --accent2: #06b6d4;
+    --accent3: #a78bfa;
+    --gold: #f59e0b;
+    --green: #10b981;
+    --red: #ef4444;
+    --text: #e2e8f0;
+    --text2: #94a3b8;
+    --text3: #64748b;
+    --card-shadow: 0 4px 24px rgba(0,0,0,0.4);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Outfit', sans-serif;
+    min-height: 100vh;
+    padding: 24px;
+  }
+
+  /* HEADER */
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 28px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .header-left h1 {
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    background: linear-gradient(135deg, #e2e8f0 0%, #94a3b8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .header-left p {
+    color: var(--text3);
+    font-size: 13px;
+    margin-top: 3px;
+    font-family: 'DM Mono', monospace;
+  }
+  .header-badge {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: white;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+
+  /* SLICERS */
+  .slicers-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px 24px;
+    margin-bottom: 24px;
+  }
+  .slicers-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text3);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .slicers-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+  .slicers-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 20px;
+    align-items: start;
+  }
+  .slicer-group label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text3);
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .slicer-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .pill {
+    padding: 5px 13px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1.5px solid var(--border);
+    background: transparent;
+    color: var(--text2);
+    transition: all 0.18s ease;
+    white-space: nowrap;
+    font-family: 'Outfit', sans-serif;
+  }
+  .pill:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(59,130,246,0.08);
+  }
+  .pill.active {
+    border-color: var(--accent);
+    background: rgba(59,130,246,0.15);
+    color: #93c5fd;
+    font-weight: 600;
+  }
+  .pill.active-segment { border-color: var(--accent); background: rgba(59,130,246,0.15); color: #93c5fd; }
+  .pill.active-exec { border-color: var(--accent2); background: rgba(6,182,212,0.15); color: #67e8f9; }
+  .pill.active-month { border-color: var(--accent3); background: rgba(167,139,250,0.15); color: #c4b5fd; }
+  .pill.active-category { border-color: var(--gold); background: rgba(245,158,11,0.15); color: #fcd34d; }
+  .reset-btn {
+    margin-top: 4px;
+    padding: 5px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1.5px solid var(--red);
+    background: rgba(239,68,68,0.08);
+    color: #fca5a5;
+    transition: all 0.18s;
+    font-family: 'Outfit', sans-serif;
+  }
+  .reset-btn:hover { background: rgba(239,68,68,0.2); }
+
+  /* KPI CARDS */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .kpi-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px 22px;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s;
+  }
+  .kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+  }
+  .kpi-card:nth-child(1)::before { background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+  .kpi-card:nth-child(2)::before { background: linear-gradient(90deg, var(--green), var(--accent2)); }
+  .kpi-card:nth-child(3)::before { background: linear-gradient(90deg, var(--accent3), var(--accent)); }
+  .kpi-card:nth-child(4)::before { background: linear-gradient(90deg, var(--gold), var(--red)); }
+  .kpi-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 10px;
+  }
+  .kpi-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    line-height: 1;
+  }
+  .kpi-sub {
+    font-size: 12px;
+    color: var(--text3);
+    margin-top: 6px;
+  }
+  .kpi-icon {
+    position: absolute;
+    top: 18px;
+    right: 18px;
+    font-size: 24px;
+    opacity: 0.25;
+  }
+
+  /* CHARTS GRID */
+  .charts-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  .charts-row2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  .chart-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px 22px;
+  }
+  .chart-card.full-width { grid-column: 1 / -1; }
+  .chart-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .chart-title span {
+    font-size: 10px;
+    color: var(--text3);
+    font-weight: 400;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+  .chart-wrap { position: relative; }
+
+  /* TABLE */
+  .table-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px 22px;
+    margin-bottom: 16px;
+    overflow: hidden;
+  }
+  .table-search {
+    width: 260px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 7px 12px;
+    color: var(--text);
+    font-size: 12px;
+    font-family: 'Outfit', sans-serif;
+    outline: none;
+  }
+  .table-search:focus { border-color: var(--accent); }
+  .table-wrap { overflow-x: auto; margin-top: 14px; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  thead th {
+    background: var(--surface2);
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    font-size: 10px;
+    padding: 10px 14px;
+    text-align: left;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  thead th:hover { color: var(--text); }
+  tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+  }
+  tbody tr:hover { background: var(--surface2); }
+  tbody td { padding: 9px 14px; color: var(--text2); white-space: nowrap; }
+  tbody td:first-child { color: var(--text); font-weight: 500; max-width: 220px; overflow: hidden; text-overflow: ellipsis; }
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 600;
+  }
+  .badge-unit { background: rgba(59,130,246,0.15); color: #93c5fd; }
+  .badge-rso-s { background: rgba(6,182,212,0.15); color: #67e8f9; }
+  .badge-ota { background: rgba(167,139,250,0.15); color: #c4b5fd; }
+  .badge-rso-m { background: rgba(245,158,11,0.15); color: #fcd34d; }
+  .badge-rso-a { background: rgba(16,185,129,0.15); color: #6ee7b7; }
+  .num { font-family: 'DM Mono', monospace; text-align: right; }
+  .bar-mini {
+    display: inline-block;
+    height: 4px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 2px;
+    vertical-align: middle;
+    margin-left: 6px;
+    opacity: 0.7;
+  }
+  .pagination {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 14px;
+    color: var(--text3);
+    font-size: 12px;
+  }
+  .page-btns button {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text2);
+    padding: 5px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    margin-left: 6px;
+    font-family: 'Outfit', sans-serif;
+  }
+  .page-btns button:hover { border-color: var(--accent); color: var(--accent); }
+  .page-btns button:disabled { opacity: 0.35; cursor: default; }
+
+  @media (max-width: 1100px) {
+    .slicers-grid { grid-template-columns: 1fr 1fr; }
+    .kpi-grid { grid-template-columns: 1fr 1fr; }
+    .charts-grid { grid-template-columns: 1fr; }
+    .charts-row2 { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <h1>🏨 Hotel Revenue Dashboard</h1>
+    <p id="filter-summary">Showing all data • Apr – Jan</p>
+  </div>
+  <div class="header-badge" id="record-count">338 Records</div>
+</div>
+
+<!-- SLICERS -->
+<div class="slicers-section">
+  <div class="slicers-title">🎯 Filters</div>
+  <div class="slicers-grid">
+    <div class="slicer-group">
+      <label>Segment</label>
+      <div class="slicer-pills" id="seg-pills"></div>
+    </div>
+    <div class="slicer-group">
+      <label>Sales Executive</label>
+      <div class="slicer-pills" id="exec-pills"></div>
+    </div>
+    <div class="slicer-group">
+      <label>Month</label>
+      <div class="slicer-pills" id="month-pills"></div>
+    </div>
+    <div class="slicer-group">
+      <label>Category</label>
+      <div class="slicer-pills" id="cat-pills"></div>
+      <br>
+      <button class="reset-btn" onclick="resetFilters()">↺ Reset All</button>
+    </div>
+  </div>
+</div>
+
+<!-- KPI CARDS -->
+<div class="kpi-grid">
+  <div class="kpi-card">
+    <div class="kpi-icon">₹</div>
+    <div class="kpi-label">Total Revenue</div>
+    <div class="kpi-value" id="kpi-revenue">—</div>
+    <div class="kpi-sub" id="kpi-revenue-sub"></div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon">🛏</div>
+    <div class="kpi-label">Total Rooms</div>
+    <div class="kpi-value" id="kpi-rooms">—</div>
+    <div class="kpi-sub" id="kpi-rooms-sub"></div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon">🏢</div>
+    <div class="kpi-label">Active Companies</div>
+    <div class="kpi-value" id="kpi-companies">—</div>
+    <div class="kpi-sub" id="kpi-companies-sub"></div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-icon">💰</div>
+    <div class="kpi-label">Avg Revenue/Room</div>
+    <div class="kpi-value" id="kpi-arpr">—</div>
+    <div class="kpi-sub" id="kpi-arpr-sub"></div>
+  </div>
+</div>
+
+<!-- CHARTS ROW 1 -->
+<div class="charts-grid">
+  <div class="chart-card">
+    <div class="chart-title">Monthly Trend <span id="trend-toggle-label">Revenue</span></div>
+    <div class="chart-wrap" style="height:240px">
+      <canvas id="trendChart"></canvas>
+    </div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-title">Segment Mix <span>Revenue Share</span></div>
+    <div class="chart-wrap" style="height:240px">
+      <canvas id="segChart"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- CHARTS ROW 2 -->
+<div class="charts-row2">
+  <div class="chart-card">
+    <div class="chart-title">Sales Executive Performance</div>
+    <div class="chart-wrap" style="height:220px">
+      <canvas id="execChart"></canvas>
+    </div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-title">Top 10 Companies</div>
+    <div class="chart-wrap" style="height:220px">
+      <canvas id="compChart"></canvas>
+    </div>
+  </div>
+  <div class="chart-card">
+    <div class="chart-title">Revenue vs Rooms <span>Monthly</span></div>
+    <div class="chart-wrap" style="height:220px">
+      <canvas id="dualChart"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- DATA TABLE -->
+<div class="table-card">
+  <div class="chart-title">
+    Company Detail Table
+    <input class="table-search" id="tableSearch" type="text" placeholder="🔍 Search company…" oninput="renderTable()">
+  </div>
+  <div class="table-wrap">
+    <table id="dataTable">
+      <thead>
+        <tr>
+          <th onclick="sortTable('Company')">Company ⇅</th>
+          <th onclick="sortTable('Segment')">Segment ⇅</th>
+          <th onclick="sortTable('Sales Exec.')">Exec ⇅</th>
+          <th onclick="sortTable('Category')">Category ⇅</th>
+          <th onclick="sortTable('Total')" style="text-align:right">Total ⇅</th>
+          <th style="text-align:right">Share</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+  <div class="pagination">
+    <span id="page-info"></span>
+    <div class="page-btns">
+      <button id="prevBtn" onclick="changePage(-1)">← Prev</button>
+      <button id="nextBtn" onclick="changePage(1)">Next →</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ========== DATA ==========
+const RAW = [{"Company":"INDIVIDUALS","Segment":"Unit","Sales Exec.":"FO","Category":"Revenue","Apr":4500.0,"May":366542.07,"Jun":347473.55,"Jul":342508.07,"Aug":370469.12,"Sep":115909.84,"Oct":253507.32,"Nov":391447.35,"Dec":569307.92,"Jan":117582.99,"Total":2879248.23},{"Company":"321 EDUCATION FOUNDATION","Segment":"Unit","Sales Exec.":"SG","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":6300.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":6300.0},{"Company":"ACCENTURE SOLUTIONS PRIVATE LIMITED","Segment":"RSO(S)","Sales Exec.":"VA","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":37500.0,"Jan":12500.0,"Total":50000.0},{"Company":"ACCESS HEALTH CARE","Segment":"Unit","Sales Exec.":"SG","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":8400.0,"Oct":8400.0,"Nov":0.0,"Dec":14000.0,"Jan":5600.0,"Total":36400.0},{"Company":"ADVANCE SCIENTIFIC EQUIPMENT PRIVATE LIMITED","Segment":"OTA","Sales Exec.":"AK","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":5000.0,"Jan":0.0,"Total":5000.0},{"Company":"AGEAS FEDERAL LIFE INSURANCE COMPANY LTD","Segment":"RSO(M)","Sales Exec.":"SC","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":96000.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":96000.0},{"Company":"AGODA","Segment":"OTA","Sales Exec.":"AK","Category":"Revenue","Apr":290630.56,"May":509294.41,"Jun":428243.0,"Jul":86256.61,"Aug":165098.17,"Sep":80883.0,"Oct":451467.66,"Nov":312091.11,"Dec":194940.65,"Jan":9000.0,"Total":2527905.17},{"Company":"AISIN AUTOMOTIVE HARYANA PRIVATE LIMITED","Segment":"RSO(S)","Sales Exec.":"VA","Category":"Revenue","Apr":0.0,"May":12500.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":6600.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":19100.0},{"Company":"AISIN AUTOMOTIVE HARYANA PVT. LTD.","Segment":"RSO(S)","Sales Exec.":"VA","Category":"Revenue","Apr":39600.0,"May":6250.0,"Jun":0.0,"Jul":0.0,"Aug":13200.0,"Sep":0.0,"Oct":0.0,"Nov":48000.0,"Dec":0.0,"Jan":0.0,"Total":107050.0},{"Company":"ALTOLIVING ENTERPRISE SOFTWARE INDIA PRIVATE LIMITED","Segment":"RSO(S)","Sales Exec.":"VA","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":1504000.0,"Jul":2984500.0,"Aug":1137400.0,"Sep":521700.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":6147600.0},{"Company":"AQUATECH SYSTEMS ASIA PVT LTD","Segment":"Unit","Sales Exec.":"SG","Category":"Revenue","Apr":0.0,"May":33250.0,"Jun":0.0,"Jul":19500.0,"Aug":45500.0,"Sep":0.0,"Oct":28000.0,"Nov":12000.0,"Dec":0.0,"Jan":0.0,"Total":138250.0},{"Company":"ARCELORMITTAL NIPPON STEEL INDIA LIMITED","Segment":"Unit","Sales Exec.":"SG","Category":"Revenue","Apr":10350.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":10350.0},{"Company":"ARNAV PLUMBING SYSTEM LLP","Segment":"OTA","Sales Exec.":"AK","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":4017.85,"Jan":0.0,"Total":4017.85},{"Company":"ARTESIAN WATERTECH PRIVATE LIMITED","Segment":"OTA","Sales Exec.":"AK","Category":"Revenue","Apr":0.0,"May":6000.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":6000.0},{"Company":"ASHIANA HOUSING LIMITED","Segment":"Unit","Sales Exec.":"SG","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":6000.0,"Aug":12000.0,"Sep":0.0,"Oct":0.0,"Nov":12000.0,"Dec":6000.0,"Jan":0.0,"Total":36000.0},{"Company":"ASHOK LEYLAND LTD","Segment":"RSO(S)","Sales Exec.":"VA","Category":"Revenue","Apr":11800.0,"May":8000.0,"Jun":30050.0,"Jul":0.0,"Aug":6900.0,"Sep":0.0,"Oct":23600.0,"Nov":26550.0,"Dec":17700.0,"Jan":20300.0,"Total":144900.0},{"Company":"AUTOBAHN TRUCKING CORPORATION PRIVATE LIMITED","Segment":"Unit","Sales Exec.":"SG","Category":"Revenue","Apr":0.0,"May":2500.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":2500.0},{"Company":"AUTOBAHN TRUCKING CORPORATION PVT LTD","Segment":"Unit","Sales Exec.":"SG","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":7400.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":2500.0,"Dec":0.0,"Jan":0.0,"Total":9900.0},{"Company":"BANCO GASKETS INDIA LIMITED","Segment":"OTA","Sales Exec.":"AK","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":4500.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":4500.0},{"Company":"BENDER INDIA PRIVATE LIMITED","Segment":"Unit","Sales Exec.":"SG","Category":"Revenue","Apr":0.0,"May":10200.0,"Jun":6800.0,"Jul":0.0,"Aug":13600.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":30600.0},{"Company":"BLUEBINARIES","Segment":"Unit","Sales Exec.":"SG","Category":"Revenue","Apr":0.0,"May":2300.0,"Jun":27600.0,"Jul":0.0,"Aug":0.0,"Sep":7000.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":36900.0},{"Company":"BOOKING.COM","Segment":"OTA","Sales Exec.":"AK","Category":"Revenue","Apr":49683.0,"May":15494.0,"Jun":0.0,"Jul":3600.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":68777.0},{"Company":"BOSCH GLOBAL SOFTWARE TECHNOLOGIES PRIVATE LIMITED","Segment":"RSO(S)","Sales Exec.":"VA","Category":"Revenue","Apr":15000.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":6000.0,"Sep":0.0,"Oct":6000.0,"Nov":54000.0,"Dec":33000.0,"Jan":9000.0,"Total":123000.0},{"Company":"BOSCH LIMITED","Segment":"RSO(S)","Sales Exec.":"VA","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":3000.0,"Total":3000.0},{"Company":"BROSE INDIA AUTOMOTIVE SYSTEMS PVT. LTD.","Segment":"Unit","Sales Exec.":"SG","Category":"Revenue","Apr":35200.0,"May":0.0,"Jun":0.0,"Jul":17000.0,"Aug":6000.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":58200.0},{"Company":"CAPRI GLOBAL CAPITAL LIMITED","Segment":"Unit","Sales Exec.":"FO","Category":"Revenue","Apr":9000.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":9000.0},{"Company":"CARL ZEISS INDIA (BANGALORE) PRIVATE LIMITED","Segment":"Unit","Sales Exec.":"SG","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":28800.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":28800.0},{"Company":"CARRIER AIRCONDITIONING & REFRIGERATION LIMITED","Segment":"OTA","Sales Exec.":"AK","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":2585.71,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":2585.71},{"Company":"CASA2 STAYS PRIVATE LIMITED","Segment":"Unit","Sales Exec.":"FO","Category":"Revenue","Apr":32000.0,"May":19200.0,"Jun":7155.82,"Jul":67889.55,"Aug":5894.48,"Sep":4000.0,"Oct":55352.0,"Nov":4173.0,"Dec":21542.3,"Jan":0.0,"Total":217207.15},{"Company":"CATALYST SERVICE SOLUTIONS PARTNERS PRIVATE LIMITED","Segment":"Unit","Sales Exec.":"FO","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":10714.28,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":7000.0,"Dec":0.0,"Jan":0.0,"Total":17714.28},{"Company":"CHAKR INNOVATION PRIVATE LIMITED","Segment":"Unit","Sales Exec.":"FO","Category":"Revenue","Apr":0.0,"May":2678.57,"Jun":2399.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":5077.57},{"Company":"CHEMICAL SYSTEMS TECHNOLOGIES INDIA PVT LTD","Segment":"Unit","Sales Exec.":"FO","Category":"Revenue","Apr":0.0,"May":25000.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":25000.0},{"Company":"CHIRPN IT SOLUTIONS LLP","Segment":"Unit","Sales Exec.":"SG","Category":"Revenue","Apr":2750.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":27500.0,"Dec":0.0,"Jan":0.0,"Total":30250.0},{"Company":"CLEARTRIP CORPORATE","Segment":"RSO(S)","Sales Exec.":"VA","Category":"Revenue","Apr":6798.0,"May":32087.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":8107.97,"Oct":13063.35,"Nov":14015.0,"Dec":27947.46,"Jan":6768.76,"Total":108787.54},{"Company":"COMPLIMENTARY","Segment":"Unit","Sales Exec.":"HG","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":0.0},{"Company":"CORPORATE SOLUTIONS REDEFINED INDIA PVT","Segment":"RSO(S)","Sales Exec.":"VA","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":179740.0,"Jul":626640.0,"Aug":63890.0,"Sep":15000.0,"Oct":0.0,"Nov":17500.0,"Dec":47000.0,"Jan":41000.0,"Total":990770.0},{"Company":"CRPF","Segment":"RSO(S)","Sales Exec.":"CS","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":11248.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":11248.0},{"Company":"CYBERNETIK TECHNOLOGIES PRIVATE LIMITED","Segment":"OTA","Sales Exec.":"AK","Category":"Revenue","Apr":5696.42,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":5696.42},{"Company":"DASSAULT SYSTEMES FOUNDATION","Segment":"Unit","Sales Exec.":"SG","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":203600.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":203600.0},{"Company":"DELTA ELECTRONICS INDIA PRIVATE LIMITED","Segment":"Unit","Sales Exec.":"FO","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":41071.4,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":41071.4},{"Company":"DEPSON ENGINEERING PRIVATE LIMITED","Segment":"Unit","Sales Exec.":"AT","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":13000.0,"Jan":0.0,"Total":13000.0},{"Company":"DESIYA","Segment":"OTA","Sales Exec.":"AK","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":13495.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":9596.0,"Nov":4125.0,"Dec":0.0,"Jan":0.0,"Total":27216.0},{"Company":"DHOLAKIA GROUP","Segment":"Unit","Sales Exec.":"HG","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":0.0},{"Company":"DIPESHKUMAR UDAYVIR SINGH","Segment":"Unit","Sales Exec.":"FO","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":3200.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":3200.0},{"Company":"DR. D. Y. PATIL BIOTECHNOLOGY AND BIOINFORMATICS INSTITUTE","Segment":"Unit","Sales Exec.":"AT","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":116200.0,"Dec":0.0,"Jan":0.0,"Total":116200.0},{"Company":"E ZEST DIGITAL SOLUTION PVT. LTD","Segment":"Unit","Sales Exec.":"SG","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":17506.42,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":17506.42},{"Company":"EASEBUZZ PRIVATE LIMITED","Segment":"Unit","Sales Exec.":"SG","Category":"Revenue","Apr":66250.0,"May":80250.0,"Jun":111750.0,"Jul":63250.0,"Aug":85250.0,"Sep":79750.0,"Oct":0.0,"Nov":99000.0,"Dec":109875.0,"Jan":68750.0,"Total":764125.0},{"Company":"EMCURE PHARMACEUTICALS LTD.","Segment":"Unit","Sales Exec.":"SG","Category":"Revenue","Apr":63400.0,"May":16000.0,"Jun":60600.0,"Jul":6400.0,"Aug":63800.0,"Sep":63400.0,"Oct":66800.0,"Nov":25200.0,"Dec":113700.0,"Jan":0.0,"Total":479300.0},{"Company":"EMERSON CLIMATE TECHNOLOGIES","Segment":"Unit","Sales Exec.":"SG","Category":"Revenue","Apr":14000.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":14000.0},{"Company":"EMERSON MEASUREMENT SYSTEMS AND SOLUTIONS (INDIA) PRIVATE LI","Segment":"Unit","Sales Exec.":"SG","Category":"Revenue","Apr":0.0,"May":28000.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":28000.0},{"Company":"ESCORTS KUBOTA LIMITED","Segment":"Unit","Sales Exec.":"SG","Category":"Revenue","Apr":12678.57,"May":3000.0,"Jun":3000.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":71874.89,"Dec":7000.0,"Jan":0.0,"Total":97553.46},{"Company":"ETHICS ENGINEERING AND CONSULTANCY","Segment":"OTA","Sales Exec.":"AK","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":4500.0,"Jan":0.0,"Total":4500.0},{"Company":"EVERESTT CHILLERS PRIVATE LIMITED","Segment":"OTA","Sales Exec.":"AK","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":3712.5,"Jan":0.0,"Total":3712.5},{"Company":"EVIONIX SYSTEMS PRIVATE LIMITED","Segment":"OTA","Sales Exec.":"AK","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":6378.75,"Jan":0.0,"Total":6378.75},{"Company":"EXOTECH PLASTICS PRIVATE LIMITED","Segment":"Unit","Sales Exec.":"SG","Category":"Revenue","Apr":162600.0,"May":134300.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":296900.0},{"Company":"EXPEDIA","Segment":"OTA","Sales Exec.":"AK","Category":"Revenue","Apr":97879.32,"May":35666.77,"Jun":46581.85,"Jul":85155.25,"Aug":2129.13,"Sep":0.0,"Oct":0.0,"Nov":12857.6,"Dec":14464.8,"Jan":0.0,"Total":294734.72},{"Company":"FRISTINE INFOTECH PRIVATE LIMITED","Segment":"OTA","Sales Exec.":"AK","Category":"Revenue","Apr":5357.14,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":5357.14},{"Company":"FUTURE GENERALI INDIA INSURANCE COMPANY LIMITED","Segment":"Unit","Sales Exec.":"SG","Category":"Revenue","Apr":27700.0,"May":0.0,"Jun":0.0,"Jul":10000.0,"Aug":22500.0,"Sep":24500.0,"Oct":24000.0,"Nov":17500.0,"Dec":32500.0,"Jan":17500.0,"Total":176200.0},{"Company":"GANPAT JAGTAP","Segment":"Unit","Sales Exec.":"FO","Category":"Revenue","Apr":3000.0,"May":0.0,"Jun":13000.0,"Jul":3125.0,"Aug":7000.0,"Sep":0.0,"Oct":3500.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":29625.0},{"Company":"GLOBAL CNC PRIVATE LIMITED","Segment":"Unit","Sales Exec.":"FO","Category":"Revenue","Apr":0.0,"May":47200.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":47200.0},{"Company":"GOIBIBO","Segment":"OTA","Sales Exec.":"AK","Category":"Revenue","Apr":145048.0,"May":152347.0,"Jun":113773.0,"Jul":11148.0,"Aug":27097.0,"Sep":69718.83,"Oct":103620.16,"Nov":132489.96,"Dec":406808.55,"Jan":155849.66,"Total":1317900.16},{"Company":"GREAVES COTTON LIMITED","Segment":"OTA","Sales Exec.":"AK","Category":"Revenue","Apr":5357.14,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":5357.14},{"Company":"HDFC BANK","Segment":"RSO(M)","Sales Exec.":"SC","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":32250.0,"Jan":24000.0,"Total":56250.0},{"Company":"HEC HOSPITALITY PRIVATE LIMITED","Segment":"Unit","Sales Exec.":"FO","Category":"Revenue","Apr":0.0,"May":2750.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":2750.0},{"Company":"HELIFLEX ENGINEERING AND SERVICES PRIVATE LIMITED","Segment":"OTA","Sales Exec.":"AK","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":2999.25,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":2999.25},{"Company":"HINDUSTAN COCA COLA BEVERAGES PRIVATE LIMITED","Segment":"RSO(M)","Sales Exec.":"SC","Category":"Revenue","Apr":16000.0,"May":158500.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":174500.0},{"Company":"HOLTEC ASIA PRIVATE LIMITED","Segment":"Unit","Sales Exec.":"SG","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":39250.0,"Jul":24000.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":63250.0},{"Company":"HOTELCLOUD SERVICES PRIVATE LIMITED","Segment":"OTA","Sales Exec.":"AK","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":4240.0,"Aug":77199.0,"Sep":78400.0,"Oct":93229.46,"Nov":44000.0,"Dec":4800.0,"Jan":0.0,"Total":301868.46},{"Company":"HOTELSCART PRIVATE LIMITED","Segment":"Unit","Sales Exec.":"FO","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":9000.0,"Jan":0.0,"Total":9000.0},{"Company":"HRS","Segment":"OTA","Sales Exec.":"AK","Category":"Revenue","Apr":0.0,"May":64800.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":2125.0,"Dec":0.0,"Jan":0.0,"Total":66925.0},{"Company":"HUMMING BIRD DIGITAL PVT LTD","Segment":"RSO(S)","Sales Exec.":"VA","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":31200.0,"Jul":12220.0,"Aug":264480.0,"Sep":651910.0,"Oct":471440.0,"Nov":82540.0,"Dec":245700.0,"Jan":5580.0,"Total":1765070.0},{"Company":"HYPERGUEST","Segment":"OTA","Sales Exec.":"AK","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":1967.85,"Nov":5400.0,"Dec":3490.18,"Jan":0.0,"Total":10858.03},{"Company":"IMCD INDIA PRIVATE LIMITED","Segment":"Unit","Sales Exec.":"SG","Category":"Revenue","Apr":0.0,"May":58700.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":58700.0},{"Company":"INDIA SECURITY PRESS","Segment":"OTA","Sales Exec.":"AK","Category":"Revenue","Apr":4000.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":4000.0},{"Company":"INDIAN OIL CORPORATION REFINERY","Segment":"OTA","Sales Exec.":"AK","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":13635.0,"Jan":0.0,"Total":13635.0},{"Company":"INFALLIBLE TRAVEL CONCEPTS PVT LTD","Segment":"Unit","Sales Exec.":"HG","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":0.0},{"Company":"INFOSTRETCH CORPORATION (INDIA) PVT LTD","Segment":"Unit","Sales Exec.":"SG","Category":"Revenue","Apr":6600.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":2800.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":9400.0},{"Company":"INITIATIVE ENGINEERING","Segment":"Unit","Sales Exec.":"FO","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":20357.1,"Nov":16800.0,"Dec":0.0,"Jan":0.0,"Total":37157.1},{"Company":"INKODOP TECHNOLOGIES PRIVATE LIMITED","Segment":"Unit","Sales Exec.":"SG","Category":"Revenue","Apr":54250.0,"May":35900.0,"Jun":17500.0,"Jul":0.0,"Aug":91350.0,"Sep":0.0,"Oct":0.0,"Nov":29500.0,"Dec":0.0,"Jan":0.0,"Total":228500.0},{"Company":"INNOPLEXUS CONSULTING SERVICES P LTD","Segment":"Unit","Sales Exec.":"SG","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":13200.0,"Aug":15400.0,"Sep":11000.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":39600.0},{"Company":"INVENTREE HOTEL","Segment":"Unit","Sales Exec.":"HG","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":0.0},{"Company":"ISBSOFT TECHNOLOGY SERVICES LLP","Segment":"Unit","Sales Exec.":"SG","Category":"Revenue","Apr":19250.0,"May":5500.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":24750.0},{"Company":"KAIA TOURISM PRIVATE LIMITED","Segment":"RSO(S)","Sales Exec.":"VA","Category":"Revenue","Apr":52500.0,"May":0.0,"Jun":0.0,"Jul":7800.0,"Aug":80400.0,"Sep":14400.0,"Oct":6000.0,"Nov":20000.0,"Dec":10000.0,"Jan":21000.0,"Total":212100.0},{"Company":"KARTHIKA NADAR","Segment":"Unit","Sales Exec.":"FO","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":7499.0,"Dec":0.0,"Jan":0.0,"Total":7499.0},{"Company":"KLAUS UNION ENGINEERING INDIA PRIVATE LI","Segment":"Unit","Sales Exec.":"SG","Category":"Revenue","Apr":0.0,"May":8190.0,"Jun":16380.0,"Jul":24570.0,"Aug":0.0,"Sep":10920.0,"Oct":0.0,"Nov":10920.0,"Dec":0.0,"Jan":0.0,"Total":70980.0},{"Company":"KNORR BREMSE SYSTEMS FOR COMMERCIAL VEHICLES INDIA PVT LTD","Segment":"OTA","Sales Exec.":"AK","Category":"Revenue","Apr":2500.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":2500.0},{"Company":"KPIT TECHNOLOGIES LTD.","Segment":"Unit","Sales Exec.":"SG","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":3000.0,"Nov":0.0,"Dec":9000.0,"Jan":0.0,"Total":12000.0},{"Company":"KTA SPINDLE TOOLINGS","Segment":"Unit","Sales Exec.":"SG","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":17400.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":17400.0},{"Company":"KUI PUMPS PRIVATE LIMITED","Segment":"Unit","Sales Exec.":"SG","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":2730.0,"Jul":24570.0,"Aug":0.0,"Sep":0.0,"Oct":16380.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":43680.0},{"Company":"KYORITSU ELECTRIC INDIA PVT LTD","Segment":"Unit","Sales Exec.":"SG","Category":"Revenue","Apr":10000.0,"May":13500.0,"Jun":10000.0,"Jul":12500.0,"Aug":7500.0,"Sep":10000.0,"Oct":15000.0,"Nov":20000.0,"Dec":20000.0,"Jan":7500.0,"Total":126000.0},{"Company":"LALIT SHINDE","Segment":"Unit","Sales Exec.":"FO","Category":"Revenue","Apr":38000.0,"May":33500.0,"Jun":12000.0,"Jul":8000.0,"Aug":11000.0,"Sep":0.0,"Oct":14000.0,"Nov":8000.0,"Dec":20000.0,"Jan":4000.0,"Total":148500.0},{"Company":"LEADING EDGE TRAVEL MANAGEMENT PVT. LTD.","Segment":"RSO(M)","Sales Exec.":"SC","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":8250.0,"Jan":0.0,"Total":8250.0},{"Company":"LECHLER INDIA PRIVATE LIMITED","Segment":"Unit","Sales Exec.":"FO","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":2733.75,"Jan":0.0,"Total":2733.75},{"Company":"LKP SECURITIES LTD","Segment":"Unit","Sales Exec.":"FO","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":6400.0,"Total":6400.0},{"Company":"M/S SARLA ADVANTECH PRIVATE LIMITED","Segment":"Unit","Sales Exec.":"FO","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":6000.0,"Dec":0.0,"Jan":0.0,"Total":6000.0},{"Company":"MAHLE ANAND FILTER SYSTEMS PRIVATE LIMITED","Segment":"Unit","Sales Exec.":"SG","Category":"Revenue","Apr":54400.0,"May":21600.0,"Jun":40500.0,"Jul":0.0,"Aug":43200.0,"Sep":74000.0,"Oct":98950.0,"Nov":66000.0,"Dec":2750.0,"Jan":11000.0,"Total":412400.0},{"Company":"MAKE MY TRIP","Segment":"OTA","Sales Exec.":"AK","Category":"Revenue","Apr":618373.04,"May":519820.0,"Jun":463391.85,"Jul":162319.22,"Aug":151644.9,"Sep":199358.48,"Oct":365146.04,"Nov":473056.24,"Dec":1114863.67,"Jan":236562.88,"Total":4304536.32},{"Company":"MAS AUTO SYSTEMS PVT LTD","Segment":"Unit","Sales Exec.":"FO","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":8000.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":8000.0},{"Company":"MATTER MOTOR WORKS PRIVATE LIMITED","Segment":"RSO(A)","Sales Exec.":"AC","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":23000.0,"Jul":53610.0,"Aug":85260.0,"Sep":27280.0,"Oct":94140.0,"Nov":47300.0,"Dec":82300.0,"Jan":20300.0,"Total":433190.0},{"Company":"MEMORA JEWELS","Segment":"OTA","Sales Exec.":"AK","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":2678.57,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":2678.57},{"Company":"METTLER TOLEDO INDIA PRIVATE LIMITED","Segment":"OTA","Sales Exec.":"AK","Category":"Revenue","Apr":2678.57,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":2678.57},{"Company":"MINDA CORPORATION LIMITED","Segment":"Unit","Sales Exec.":"FO","Category":"Revenue","Apr":28962.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":28962.0},{"Company":"MSYS TECH INDIA PRIVATE LIMITED","Segment":"Unit","Sales Exec.":"SG","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":18900.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":18900.0},{"Company":"MSYS TECHNOLOGIES.COM","Segment":"Unit","Sales Exec.":"SG","Category":"Revenue","Apr":6300.0,"May":0.0,"Jun":9450.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":15750.0},{"Company":"MUKESH KRIPALINI","Segment":"Unit","Sales Exec.":"AT","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":2818.31,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":58300.0,"Jan":0.0,"Total":61118.31},{"Company":"N S N GROUP","Segment":"Unit","Sales Exec.":"SG","Category":"Revenue","Apr":3500.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":3500.0},{"Company":"NISHNAI HOLIDAYS","Segment":"RSO(M)","Sales Exec.":"SC","Category":"Revenue","Apr":0.0,"May":89285.6,"Jun":58035.64,"Jul":0.0,"Aug":60267.78,"Sep":17857.12,"Oct":16071.44,"Nov":405356.65,"Dec":106785.43,"Jan":0.0,"Total":753659.66},{"Company":"NORMET INDIA PRIVATE LIMITED","Segment":"Unit","Sales Exec.":"FO","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":7087.5,"Jan":0.0,"Total":7087.5},{"Company":"NSK BEARINGS INDIA PRIVATE LIMITED","Segment":"Unit","Sales Exec.":"SG","Category":"Revenue","Apr":4000.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":4000.0},{"Company":"OJASVEE INTELLIMATION","Segment":"OTA","Sales Exec.":"AK","Category":"Revenue","Apr":0.0,"May":2500.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":2500.0},{"Company":"OP MOBILITY","Segment":"Unit","Sales Exec.":"SG","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":11100.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":11100.0},{"Company":"ORRITEL HOTEL HINJEWADI","Segment":"Unit","Sales Exec.":"HG","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":0.0},{"Company":"PERPETUALBLOCK TECHNOLOGIES PRIVATE LIMITED","Segment":"Unit","Sales Exec.":"SG","Category":"Revenue","Apr":8800.0,"May":22000.0,"Jun":0.0,"Jul":0.0,"Aug":23000.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":53800.0},{"Company":"PERSISTENT SYSTEMS LIMITED","Segment":"Unit","Sales Exec.":"SG","Category":"Revenue","Apr":0.0,"May":14400.0,"Jun":0.0,"Jul":9600.0,"Aug":0.0,"Sep":67200.0,"Oct":0.0,"Nov":622555.86,"Dec":12000.0,"Jan":0.0,"Total":725755.86},{"Company":"PLASTIC OMNIUM AUTO INERGY INDIA PRIVATE LIMITED","Segment":"Unit","Sales Exec.":"SG","Category":"Revenue","Apr":11400.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":11400.0},{"Company":"PRAJ GENX LIMITED","Segment":"Unit","Sales Exec.":"SG","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":34000.0,"Sep":788.95,"Oct":81600.0,"Nov":92000.0,"Dec":0.0,"Jan":0.0,"Total":208388.95},{"Company":"PRAJ INDUSTRIES LTD","Segment":"Unit","Sales Exec.":"SG","Category":"Revenue","Apr":22800.0,"May":55100.0,"Jun":94000.0,"Jul":119000.0,"Aug":343600.0,"Sep":199600.0,"Oct":123600.0,"Nov":15300.0,"Dec":184385.58,"Jan":59000.0,"Total":1216385.58},{"Company":"PRIME GLOBAL ACCOMMODATION SERVICES PRIVATE LIMITED","Segment":"RSO(A)","Sales Exec.":"AC","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":89750.0,"Jul":0.0,"Aug":0.0,"Sep":22500.0,"Oct":0.0,"Nov":28571.4,"Dec":0.0,"Jan":0.0,"Total":140821.4},{"Company":"PROSPIN PRODUCTS INDIA PRIVATE LIMITED","Segment":"Unit","Sales Exec.":"FO","Category":"Revenue","Apr":0.0,"May":30803.55,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":30803.55},{"Company":"RATNESH DUBEY","Segment":"Unit","Sales Exec.":"FO","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":4387.5,"Dec":0.0,"Jan":0.0,"Total":4387.5},{"Company":"RELIABLE ENGINEERING","Segment":"Unit","Sales Exec.":"FO","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":78571.32,"Jan":0.0,"Total":78571.32},{"Company":"ROYAL ENFIELD A UnitOF EICHER MOTORS LIMITED","Segment":"Unit","Sales Exec.":"FO","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":3000.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":3000.0},{"Company":"SBI LIFE INSURANCE CO.LTD.","Segment":"Unit","Sales Exec.":"SG","Category":"Revenue","Apr":0.0,"May":161900.0,"Jun":0.0,"Jul":0.0,"Aug":222900.0,"Sep":0.0,"Oct":37100.0,"Nov":21200.0,"Dec":249300.0,"Jan":221400.0,"Total":913800.0},{"Company":"SBI LIFE INSURANCE COMPANY LTD","Segment":"Unit","Sales Exec.":"SG","Category":"Revenue","Apr":0.0,"May":4000.0,"Jun":0.0,"Jul":413400.0,"Aug":312800.0,"Sep":100800.0,"Oct":228000.0,"Nov":444000.0,"Dec":14600.0,"Jan":55700.0,"Total":1573300.0},{"Company":"SCMHRD","Segment":"Unit","Sales Exec.":"SG","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":11100.0,"Jul":77700.0,"Aug":33300.0,"Sep":22200.0,"Oct":14800.0,"Nov":14800.0,"Dec":59200.0,"Jan":29600.0,"Total":262700.0},{"Company":"SELF BOOKING","Segment":"Unit","Sales Exec.":"FO","Category":"Revenue","Apr":523359.4,"May":29696.42,"Jun":3000.0,"Jul":10800.0,"Aug":0.0,"Sep":0.0,"Oct":13625.0,"Nov":0.0,"Dec":4017.85,"Jan":0.0,"Total":584498.67},{"Company":"SHOBHA MAHESH NARAWADE","Segment":"Unit","Sales Exec.":"AT","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":21964.28,"Dec":405000.0,"Jan":0.0,"Total":426964.28},{"Company":"SHREEJI TRANSLOGISTICS LIMITED","Segment":"OTA","Sales Exec.":"AK","Category":"Revenue","Apr":3000.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":3000.0},{"Company":"SMARTEK21 SOFTWARE PRODUCTS AND SERVICES","Segment":"Unit","Sales Exec.":"SG","Category":"Revenue","Apr":8000.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":58750.0,"Dec":0.0,"Jan":0.0,"Total":66750.0},{"Company":"SOFTWARE TECHNOLOGY PARKS OF INDIA","Segment":"Unit","Sales Exec.":"SS","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":18480.0,"Jan":0.0,"Total":18480.0},{"Company":"SPECIALCHAR PRIVATE LIMITED","Segment":"RSO(A)","Sales Exec.":"AC","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":12050.0,"Jul":20950.0,"Aug":9000.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":42000.0},{"Company":"SPECIALITY RESTAURANTS LTD.","Segment":"Unit","Sales Exec.":"SG","Category":"Revenue","Apr":84600.0,"May":11750.0,"Jun":0.0,"Jul":11750.0,"Aug":28200.0,"Sep":2350.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":138650.0},{"Company":"SPECTACOM GLOBAL PRIVATE LIMITED","Segment":"Unit","Sales Exec.":"FO","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":7000.0,"Dec":0.0,"Jan":0.0,"Total":7000.0},{"Company":"SPX FLOW TECHNOLOGY INDIA PVT LTD","Segment":"Unit","Sales Exec.":"SG","Category":"Revenue","Apr":3200.0,"May":3200.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":6400.0},{"Company":"SQUARE PANDA INDIA LLP","Segment":"Unit","Sales Exec.":"SG","Category":"Revenue","Apr":0.0,"May":3000.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":3000.0},{"Company":"STAYONSKILL TECHNOLOGIES PRIVATE LIMITED","Segment":"Unit","Sales Exec.":"FO","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":8100.0,"Dec":0.0,"Jan":0.0,"Total":8100.0},{"Company":"STERLING GENERATORS PVT LTD","Segment":"Unit","Sales Exec.":"SG","Category":"Revenue","Apr":0.0,"May":9750.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":9750.0},{"Company":"SUNSHINE DESTINATIONZ","Segment":"RSO(M)","Sales Exec.":"SC","Category":"Revenue","Apr":0.0,"May":75800.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":75800.0},{"Company":"SYMBIOSIS","Segment":"Unit","Sales Exec.":"SG","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":11100.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":11100.0},{"Company":"SYNECHRON DIGITAL PAYMENTS SERVICES PRIVATE LIMITED","Segment":"Unit","Sales Exec.":"SG","Category":"Revenue","Apr":22050.0,"May":19600.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":41650.0},{"Company":"SYNECHRON TECHNOLOGIES PVT.LTD.","Segment":"Unit","Sales Exec.":"SG","Category":"Revenue","Apr":201800.0,"May":210250.0,"Jun":408350.0,"Jul":127100.0,"Aug":58100.0,"Sep":57750.0,"Oct":80550.0,"Nov":79800.0,"Dec":2800.0,"Jan":23000.0,"Total":1249500.0},{"Company":"SYNGENTA INDIA PRIVATE LIMITED","Segment":"Unit","Sales Exec.":"SG","Category":"Revenue","Apr":17600.0,"May":19100.0,"Jun":0.0,"Jul":18600.0,"Aug":16500.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":71800.0},{"Company":"SYNXIS","Segment":"OTA","Sales Exec.":"AK","Category":"Revenue","Apr":18013.86,"May":2499.0,"Jun":5998.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":7142.84,"Nov":0.0,"Dec":13158.88,"Jan":48334.12,"Total":95146.7},{"Company":"SYNXIS CORPORATE","Segment":"OTA","Sales Exec.":"AK","Category":"Revenue","Apr":0.0,"May":38689.0,"Jun":48093.0,"Jul":64493.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":151275.0},{"Company":"TAMARIND GLOBAL SERVICES PVT LTD","Segment":"RSO(M)","Sales Exec.":"SC","Category":"Revenue","Apr":28744.28,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":28744.28},{"Company":"TATA AUTOCOMP SYSTEMS LIMITED","Segment":"Unit","Sales Exec.":"SG","Category":"Revenue","Apr":0.0,"May":67600.0,"Jun":22600.0,"Jul":30800.0,"Aug":107800.0,"Sep":84600.0,"Oct":18200.0,"Nov":0.0,"Dec":20800.0,"Jan":0.0,"Total":352400.0},{"Company":"TATA CAPITAL LTD","Segment":"OTA","Sales Exec.":"AK","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":2750.0,"Jan":0.0,"Total":2750.0},{"Company":"TATA CONSULTANCY SERVICES LIMITED","Segment":"Unit","Sales Exec.":"SG","Category":"Revenue","Apr":33600.0,"May":28200.0,"Jun":49200.0,"Jul":57600.0,"Aug":4800.0,"Sep":68600.0,"Oct":92150.0,"Nov":9600.0,"Dec":0.0,"Jan":0.0,"Total":343750.0},{"Company":"TATA MOTORS LIMITED","Segment":"OTA","Sales Exec.":"AK","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":3125.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":3125.0},{"Company":"TATA PROJECTS LIMITED","Segment":"Unit","Sales Exec.":"SG","Category":"Revenue","Apr":0.0,"May":4000.0,"Jun":0.0,"Jul":0.0,"Aug":19800.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":23800.0},{"Company":"TECHPERT PROCESS INDUSTRIES","Segment":"Unit","Sales Exec.":"SG","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":3000.0,"Nov":3000.0,"Dec":0.0,"Jan":0.0,"Total":6000.0},{"Company":"TRAVEL GURU","Segment":"OTA","Sales Exec.":"AK","Category":"Revenue","Apr":70770.85,"May":46484.0,"Jun":53684.0,"Jul":4999.0,"Aug":0.0,"Sep":19197.0,"Oct":15200.0,"Nov":18526.68,"Dec":55070.78,"Jan":9750.0,"Total":293682.31},{"Company":"TRAVOTRAV","Segment":"Unit","Sales Exec.":"SS","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":50631.0,"Oct":39417.84,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":90048.84},{"Company":"TUBEFIT ENGINEERS","Segment":"Unit","Sales Exec.":"FO","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":6075.0,"Jan":0.0,"Total":6075.0},{"Company":"UPL LIMITED","Segment":"Unit","Sales Exec.":"FO","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":500.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":500.0},{"Company":"UPSCALE MEDIA PRIVATE LIMITED","Segment":"Unit","Sales Exec.":"FO","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":6000.0,"Jan":0.0,"Total":6000.0},{"Company":"URSMARTSPOC - A UnitOF B H & COMPANY","Segment":"Unit","Sales Exec.":"FO","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":2800.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":2800.0},{"Company":"VARUN BEVERAGES LIMITED","Segment":"Unit","Sales Exec.":"FO","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":2733.75,"Jan":0.0,"Total":2733.75},{"Company":"VOLANTE TECHNOLOGIES INDIA PRIVATE LIMIT","Segment":"Unit","Sales Exec.":"SG","Category":"Revenue","Apr":0.0,"May":37325.0,"Jun":4642.84,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":4800.0,"Jan":0.0,"Total":46767.84},{"Company":"WAGONS LEARNING LIMITED","Segment":"Unit","Sales Exec.":"SG","Category":"Revenue","Apr":1669800.0,"May":204100.0,"Jun":580500.0,"Jul":2017225.0,"Aug":2559117.85,"Sep":3597400.0,"Oct":1631900.0,"Nov":1425500.0,"Dec":1093300.0,"Jan":824400.0,"Total":15603242.85},{"Company":"WALKIN","Segment":"Unit","Sales Exec.":"FO","Category":"Revenue","Apr":0.0,"May":3500.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":3500.0},{"Company":"WALTERPACK AUTOMOTIVE PRODUCTS INDIA PRIVATE LIMITED","Segment":"RSO(A)","Sales Exec.":"AC","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":11250.0,"Nov":0.0,"Dec":20250.2,"Jan":15750.0,"Total":47250.2},{"Company":"WEX TECHNOLOGIES PRIVATE LIMITED","Segment":"Unit","Sales Exec.":"SG","Category":"Revenue","Apr":0.0,"May":75750.0,"Jun":6500.0,"Jul":3250.0,"Aug":61000.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":146500.0},{"Company":"WIPRO LIMITED","Segment":"RSO(S)","Sales Exec.":"VA","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":62636.0,"Sep":16200.0,"Oct":2700.0,"Nov":23999.96,"Dec":117400.0,"Jan":15000.0,"Total":237935.96},{"Company":"WIPRO TECHNOLOGIES","Segment":"RSO(S)","Sales Exec.":"VA","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":4000.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":4000.0},{"Company":"YATRA","Segment":"OTA","Sales Exec.":"AK","Category":"Revenue","Apr":70420.0,"May":17394.0,"Jun":18493.0,"Jul":5500.0,"Aug":13996.0,"Sep":8702.53,"Oct":20500.0,"Nov":0.0,"Dec":164500.0,"Jan":4125.0,"Total":323630.53},{"Company":"YATRA CORPORATE","Segment":"RSO(S)","Sales Exec.":"VA","Category":"Revenue","Apr":84282.0,"May":124000.0,"Jun":185500.0,"Jul":81000.0,"Aug":24597.0,"Sep":26398.0,"Oct":38699.0,"Nov":2626.0,"Dec":3750.0,"Jan":8250.0,"Total":579102.0},{"Company":"ZUVENTUS HEALTHCARELTD","Segment":"RSO(M)","Sales Exec.":"SC","Category":"Revenue","Apr":0.0,"May":0.0,"Jun":2750.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":2750.0},{"Company":"ZYDUS LIFESCIENCES LIMITED","Segment":"Unit","Sales Exec.":"FO","Category":"Revenue","Apr":0.0,"May":5600.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":5600.0},{"Company":"INDIVIDUALS","Segment":"Unit","Sales Exec.":"FO","Category":"Room","Apr":1.0,"May":111.0,"Jun":102.0,"Jul":106.0,"Aug":109.0,"Sep":33.0,"Oct":80.0,"Nov":115.0,"Dec":163.0,"Jan":31.0,"Total":851.0},{"Company":"321 EDUCATION FOUNDATION","Segment":"Unit","Sales Exec.":"SG","Category":"Room","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":2.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":2.0},{"Company":"ACCENTURE SOLUTIONS PRIVATE LIMITED","Segment":"RSO(S)","Sales Exec.":"VA","Category":"Room","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":14.0,"Jan":5.0,"Total":19.0},{"Company":"ACCESS HEALTH CARE","Segment":"Unit","Sales Exec.":"SG","Category":"Room","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":3.0,"Oct":3.0,"Nov":0.0,"Dec":5.0,"Jan":2.0,"Total":13.0},{"Company":"ADVANCE SCIENTIFIC EQUIPMENT PRIVATE LIMITED","Segment":"OTA","Sales Exec.":"AK","Category":"Room","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":1.0,"Jan":0.0,"Total":1.0},{"Company":"AGEAS FEDERAL LIFE INSURANCE COMPANY LTD","Segment":"RSO(M)","Sales Exec.":"SC","Category":"Room","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":18.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":18.0},{"Company":"AGODA","Segment":"OTA","Sales Exec.":"AK","Category":"Room","Apr":85.0,"May":186.0,"Jun":145.0,"Jul":22.0,"Aug":45.0,"Sep":24.0,"Oct":161.0,"Nov":96.0,"Dec":63.0,"Jan":2.0,"Total":829.0},{"Company":"AISIN AUTOMOTIVE HARYANA PRIVATE LIMITED","Segment":"RSO(S)","Sales Exec.":"VA","Category":"Room","Apr":0.0,"May":4.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":2.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":6.0},{"Company":"AISIN AUTOMOTIVE HARYANA PVT. LTD.","Segment":"RSO(S)","Sales Exec.":"VA","Category":"Room","Apr":12.0,"May":2.0,"Jun":0.0,"Jul":0.0,"Aug":4.0,"Sep":0.0,"Oct":0.0,"Nov":16.0,"Dec":0.0,"Jan":0.0,"Total":34.0},{"Company":"ALTOLIVING ENTERPRISE SOFTWARE INDIA PRIVATE LIMITED","Segment":"RSO(S)","Sales Exec.":"VA","Category":"Room","Apr":0.0,"May":0.0,"Jun":319.0,"Jul":635.0,"Aug":242.0,"Sep":111.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":1307.0},{"Company":"AQUATECH SYSTEMS ASIA PVT LTD","Segment":"Unit","Sales Exec.":"SG","Category":"Room","Apr":0.0,"May":9.0,"Jun":0.0,"Jul":6.0,"Aug":14.0,"Sep":0.0,"Oct":8.0,"Nov":3.0,"Dec":0.0,"Jan":0.0,"Total":40.0},{"Company":"ARCELORMITTAL NIPPON STEEL INDIA LIMITED","Segment":"Unit","Sales Exec.":"SG","Category":"Room","Apr":3.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":3.0},{"Company":"ARNAV PLUMBING SYSTEM LLP","Segment":"OTA","Sales Exec.":"AK","Category":"Room","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":1.0,"Jan":0.0,"Total":1.0},{"Company":"ARTESIAN WATERTECH PRIVATE LIMITED","Segment":"OTA","Sales Exec.":"AK","Category":"Room","Apr":0.0,"May":2.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":2.0},{"Company":"ASHIANA HOUSING LIMITED","Segment":"Unit","Sales Exec.":"SG","Category":"Room","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":2.0,"Aug":4.0,"Sep":0.0,"Oct":0.0,"Nov":4.0,"Dec":2.0,"Jan":0.0,"Total":12.0},{"Company":"ASHOK LEYLAND LTD","Segment":"RSO(S)","Sales Exec.":"VA","Category":"Room","Apr":4.0,"May":2.0,"Jun":9.0,"Jul":0.0,"Aug":2.0,"Sep":0.0,"Oct":8.0,"Nov":9.0,"Dec":6.0,"Jan":6.0,"Total":46.0},{"Company":"AUTOBAHN TRUCKING CORPORATION PRIVATE LIMITED","Segment":"Unit","Sales Exec.":"SG","Category":"Room","Apr":0.0,"May":1.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":1.0},{"Company":"AUTOBAHN TRUCKING CORPORATION PVT LTD","Segment":"Unit","Sales Exec.":"SG","Category":"Room","Apr":0.0,"May":0.0,"Jun":2.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":1.0,"Dec":0.0,"Jan":0.0,"Total":3.0},{"Company":"BANCO GASKETS INDIA LIMITED","Segment":"OTA","Sales Exec.":"AK","Category":"Room","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":1.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":1.0},{"Company":"BENDER INDIA PRIVATE LIMITED","Segment":"Unit","Sales Exec.":"SG","Category":"Room","Apr":0.0,"May":3.0,"Jun":2.0,"Jul":0.0,"Aug":4.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":9.0},{"Company":"BLUEBINARIES","Segment":"Unit","Sales Exec.":"SG","Category":"Room","Apr":0.0,"May":1.0,"Jun":8.0,"Jul":0.0,"Aug":0.0,"Sep":2.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":11.0},{"Company":"BOOKING.COM","Segment":"OTA","Sales Exec.":"AK","Category":"Room","Apr":17.0,"May":6.0,"Jun":0.0,"Jul":1.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":24.0},{"Company":"BOSCH GLOBAL SOFTWARE TECHNOLOGIES PRIVATE LIMITED","Segment":"RSO(S)","Sales Exec.":"VA","Category":"Room","Apr":5.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":2.0,"Sep":0.0,"Oct":2.0,"Nov":18.0,"Dec":11.0,"Jan":2.0,"Total":40.0},{"Company":"BOSCH LIMITED","Segment":"RSO(S)","Sales Exec.":"VA","Category":"Room","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":1.0,"Total":1.0},{"Company":"BROSE INDIA AUTOMOTIVE SYSTEMS PVT. LTD.","Segment":"Unit","Sales Exec.":"SG","Category":"Room","Apr":11.0,"May":0.0,"Jun":0.0,"Jul":6.0,"Aug":2.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":19.0},{"Company":"CAPRI GLOBAL CAPITAL LIMITED","Segment":"Unit","Sales Exec.":"FO","Category":"Room","Apr":3.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":3.0},{"Company":"CARL ZEISS INDIA (BANGALORE) PRIVATE LIMITED","Segment":"Unit","Sales Exec.":"SG","Category":"Room","Apr":0.0,"May":0.0,"Jun":9.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":9.0},{"Company":"CARRIER AIRCONDITIONING & REFRIGERATION LIMITED","Segment":"OTA","Sales Exec.":"AK","Category":"Room","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":1.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":1.0},{"Company":"CASA2 STAYS PRIVATE LIMITED","Segment":"Unit","Sales Exec.":"FO","Category":"Room","Apr":7.0,"May":6.0,"Jun":2.0,"Jul":15.0,"Aug":2.0,"Sep":2.0,"Oct":17.0,"Nov":2.0,"Dec":7.0,"Jan":0.0,"Total":60.0},{"Company":"CATALYST SERVICE SOLUTIONS PARTNERS PRIVATE LIMITED","Segment":"Unit","Sales Exec.":"FO","Category":"Room","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":4.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":2.0,"Dec":0.0,"Jan":0.0,"Total":6.0},{"Company":"CHAKR INNOVATION PRIVATE LIMITED","Segment":"Unit","Sales Exec.":"FO","Category":"Room","Apr":0.0,"May":1.0,"Jun":1.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":2.0},{"Company":"CHEMICAL SYSTEMS TECHNOLOGIES INDIA PVT LTD","Segment":"Unit","Sales Exec.":"FO","Category":"Room","Apr":0.0,"May":10.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":10.0},{"Company":"CHIRPN IT SOLUTIONS LLP","Segment":"Unit","Sales Exec.":"SG","Category":"Room","Apr":1.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":10.0,"Dec":0.0,"Jan":0.0,"Total":11.0},{"Company":"CLEARTRIP CORPORATE","Segment":"RSO(S)","Sales Exec.":"VA","Category":"Room","Apr":2.0,"May":13.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":3.0,"Oct":6.0,"Nov":5.0,"Dec":10.0,"Jan":2.0,"Total":41.0},{"Company":"COMPLIMENTARY","Segment":"Unit","Sales Exec.":"HG","Category":"Room","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":1.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":1.0},{"Company":"CORPORATE SOLUTIONS REDEFINED INDIA PVT","Segment":"RSO(S)","Sales Exec.":"VA","Category":"Room","Apr":0.0,"May":0.0,"Jun":86.0,"Jul":307.0,"Aug":29.0,"Sep":6.0,"Oct":0.0,"Nov":7.0,"Dec":17.0,"Jan":16.0,"Total":468.0},{"Company":"CRPF","Segment":"RSO(S)","Sales Exec.":"CS","Category":"Room","Apr":0.0,"May":0.0,"Jun":4.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":4.0},{"Company":"CYBERNETIK TECHNOLOGIES PRIVATE LIMITED","Segment":"OTA","Sales Exec.":"AK","Category":"Room","Apr":1.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":1.0},{"Company":"DASSAULT SYSTEMES FOUNDATION","Segment":"Unit","Sales Exec.":"SG","Category":"Room","Apr":0.0,"May":0.0,"Jun":64.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":64.0},{"Company":"DELTA ELECTRONICS INDIA PRIVATE LIMITED","Segment":"Unit","Sales Exec.":"FO","Category":"Room","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":10.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":10.0},{"Company":"DEPSON ENGINEERING PRIVATE LIMITED","Segment":"Unit","Sales Exec.":"AT","Category":"Room","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":4.0,"Jan":0.0,"Total":4.0},{"Company":"DESIYA","Segment":"OTA","Sales Exec.":"AK","Category":"Room","Apr":0.0,"May":0.0,"Jun":5.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":4.0,"Nov":1.0,"Dec":0.0,"Jan":0.0,"Total":10.0},{"Company":"DHOLAKIA GROUP","Segment":"Unit","Sales Exec.":"HG","Category":"Room","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":1.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":1.0},{"Company":"DIPESHKUMAR UDAYVIR SINGH","Segment":"Unit","Sales Exec.":"FO","Category":"Room","Apr":0.0,"May":0.0,"Jun":1.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":1.0},{"Company":"DR. D. Y. PATIL BIOTECHNOLOGY AND BIOINFORMATICS INSTITUTE","Segment":"Unit","Sales Exec.":"AT","Category":"Room","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":35.0,"Dec":0.0,"Jan":0.0,"Total":35.0},{"Company":"E ZEST DIGITAL SOLUTION PVT. LTD","Segment":"Unit","Sales Exec.":"SG","Category":"Room","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":6.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":6.0},{"Company":"EASEBUZZ PRIVATE LIMITED","Segment":"Unit","Sales Exec.":"SG","Category":"Room","Apr":25.0,"May":29.0,"Jun":39.0,"Jul":23.0,"Aug":31.0,"Sep":29.0,"Oct":0.0,"Nov":36.0,"Dec":38.0,"Jan":25.0,"Total":275.0},{"Company":"EMCURE PHARMACEUTICALS LTD.","Segment":"Unit","Sales Exec.":"SG","Category":"Room","Apr":17.0,"May":5.0,"Jun":16.0,"Jul":2.0,"Aug":19.0,"Sep":17.0,"Oct":19.0,"Nov":6.0,"Dec":28.0,"Jan":0.0,"Total":129.0},{"Company":"EMERSON CLIMATE TECHNOLOGIES","Segment":"Unit","Sales Exec.":"SG","Category":"Room","Apr":4.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":4.0},{"Company":"EMERSON MEASUREMENT SYSTEMS AND SOLUTIONS (INDIA) PRIVATE LI","Segment":"Unit","Sales Exec.":"SG","Category":"Room","Apr":0.0,"May":8.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":8.0},{"Company":"ESCORTS KUBOTA LIMITED","Segment":"Unit","Sales Exec.":"SG","Category":"Room","Apr":4.0,"May":1.0,"Jun":1.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":18.0,"Dec":2.0,"Jan":0.0,"Total":26.0},{"Company":"ETHICS ENGINEERING AND CONSULTANCY","Segment":"OTA","Sales Exec.":"AK","Category":"Room","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":1.0,"Jan":0.0,"Total":1.0},{"Company":"EVERESTT CHILLERS PRIVATE LIMITED","Segment":"OTA","Sales Exec.":"AK","Category":"Room","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":1.0,"Jan":0.0,"Total":1.0},{"Company":"EVIONIX SYSTEMS PRIVATE LIMITED","Segment":"OTA","Sales Exec.":"AK","Category":"Room","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":2.0,"Jan":0.0,"Total":2.0},{"Company":"EXOTECH PLASTICS PRIVATE LIMITED","Segment":"Unit","Sales Exec.":"SG","Category":"Room","Apr":43.0,"May":42.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":85.0},{"Company":"EXPEDIA","Segment":"OTA","Sales Exec.":"AK","Category":"Room","Apr":43.0,"May":16.0,"Jun":19.0,"Jul":19.0,"Aug":1.0,"Sep":0.0,"Oct":0.0,"Nov":2.0,"Dec":4.0,"Jan":0.0,"Total":104.0},{"Company":"FRISTINE INFOTECH PRIVATE LIMITED","Segment":"OTA","Sales Exec.":"AK","Category":"Room","Apr":2.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":2.0},{"Company":"FUTURE GENERALI INDIA INSURANCE COMPANY LIMITED","Segment":"Unit","Sales Exec.":"SG","Category":"Room","Apr":7.0,"May":0.0,"Jun":0.0,"Jul":4.0,"Aug":9.0,"Sep":10.0,"Oct":9.0,"Nov":7.0,"Dec":10.0,"Jan":7.0,"Total":63.0},{"Company":"GANPAT JAGTAP","Segment":"Unit","Sales Exec.":"FO","Category":"Room","Apr":1.0,"May":0.0,"Jun":3.0,"Jul":1.0,"Aug":2.0,"Sep":0.0,"Oct":1.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":8.0},{"Company":"GLOBAL CNC PRIVATE LIMITED","Segment":"Unit","Sales Exec.":"FO","Category":"Room","Apr":0.0,"May":16.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":16.0},{"Company":"GOIBIBO","Segment":"OTA","Sales Exec.":"AK","Category":"Room","Apr":53.0,"May":53.0,"Jun":39.0,"Jul":3.0,"Aug":7.0,"Sep":25.0,"Oct":36.0,"Nov":42.0,"Dec":138.0,"Jan":46.0,"Total":442.0},{"Company":"GREAVES COTTON LIMITED","Segment":"OTA","Sales Exec.":"AK","Category":"Room","Apr":2.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":2.0},{"Company":"HDFC BANK","Segment":"RSO(M)","Sales Exec.":"SC","Category":"Room","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":11.0,"Jan":8.0,"Total":19.0},{"Company":"HEC HOSPITALITY PRIVATE LIMITED","Segment":"Unit","Sales Exec.":"FO","Category":"Room","Apr":0.0,"May":1.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":1.0},{"Company":"HELIFLEX ENGINEERING AND SERVICES PRIVATE LIMITED","Segment":"OTA","Sales Exec.":"AK","Category":"Room","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":1.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":1.0},{"Company":"HINDUSTAN COCA COLA BEVERAGES PRIVATE LIMITED","Segment":"RSO(M)","Sales Exec.":"SC","Category":"Room","Apr":4.0,"May":43.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":47.0},{"Company":"HOLTEC ASIA PRIVATE LIMITED","Segment":"Unit","Sales Exec.":"SG","Category":"Room","Apr":0.0,"May":0.0,"Jun":12.0,"Jul":8.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":20.0},{"Company":"HOTELCLOUD SERVICES PRIVATE LIMITED","Segment":"OTA","Sales Exec.":"AK","Category":"Room","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":2.0,"Aug":38.0,"Sep":39.0,"Oct":46.0,"Nov":22.0,"Dec":2.0,"Jan":0.0,"Total":149.0},{"Company":"HOTELSCART PRIVATE LIMITED","Segment":"Unit","Sales Exec.":"FO","Category":"Room","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":3.0,"Jan":0.0,"Total":3.0},{"Company":"HRS","Segment":"OTA","Sales Exec.":"AK","Category":"Room","Apr":0.0,"May":12.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":1.0,"Dec":0.0,"Jan":0.0,"Total":13.0},{"Company":"HUMMING BIRD DIGITAL PVT LTD","Segment":"RSO(S)","Sales Exec.":"VA","Category":"Room","Apr":0.0,"May":0.0,"Jun":12.0,"Jul":5.0,"Aug":110.0,"Sep":263.0,"Oct":197.0,"Nov":34.0,"Dec":105.0,"Jan":2.0,"Total":728.0},{"Company":"HYPERGUEST","Segment":"OTA","Sales Exec.":"AK","Category":"Room","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":1.0,"Nov":1.0,"Dec":1.0,"Jan":0.0,"Total":3.0},{"Company":"IMCD INDIA PRIVATE LIMITED","Segment":"Unit","Sales Exec.":"SG","Category":"Room","Apr":0.0,"May":17.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":17.0},{"Company":"INDIA SECURITY PRESS","Segment":"OTA","Sales Exec.":"AK","Category":"Room","Apr":1.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":1.0},{"Company":"INDIAN OIL CORPORATION REFINERY","Segment":"OTA","Sales Exec.":"AK","Category":"Room","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":3.0,"Jan":0.0,"Total":3.0},{"Company":"INFALLIBLE TRAVEL CONCEPTS PVT LTD","Segment":"Unit","Sales Exec.":"HG","Category":"Room","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":7.0,"Aug":28.0,"Sep":36.0,"Oct":0.0,"Nov":8.0,"Dec":1.0,"Jan":0.0,"Total":80.0},{"Company":"INFOSTRETCH CORPORATION (INDIA) PVT LTD","Segment":"Unit","Sales Exec.":"SG","Category":"Room","Apr":2.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":1.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":3.0},{"Company":"INITIATIVE ENGINEERING","Segment":"Unit","Sales Exec.":"FO","Category":"Room","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":6.0,"Nov":6.0,"Dec":0.0,"Jan":0.0,"Total":12.0},{"Company":"INKODOP TECHNOLOGIES PRIVATE LIMITED","Segment":"Unit","Sales Exec.":"SG","Category":"Room","Apr":19.0,"May":14.0,"Jun":5.0,"Jul":0.0,"Aug":33.0,"Sep":0.0,"Oct":0.0,"Nov":10.0,"Dec":0.0,"Jan":0.0,"Total":81.0},{"Company":"INNOPLEXUS CONSULTING SERVICES P LTD","Segment":"Unit","Sales Exec.":"SG","Category":"Room","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":6.0,"Aug":7.0,"Sep":5.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":18.0},{"Company":"INVENTREE HOTEL","Segment":"Unit","Sales Exec.":"HG","Category":"Room","Apr":3.0,"May":5.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":1.0,"Total":9.0},{"Company":"ISBSOFT TECHNOLOGY SERVICES LLP","Segment":"Unit","Sales Exec.":"SG","Category":"Room","Apr":7.0,"May":2.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":9.0},{"Company":"KAIA TOURISM PRIVATE LIMITED","Segment":"RSO(S)","Sales Exec.":"VA","Category":"Room","Apr":15.0,"May":0.0,"Jun":0.0,"Jul":3.0,"Aug":33.0,"Sep":6.0,"Oct":2.0,"Nov":6.0,"Dec":2.0,"Jan":5.0,"Total":72.0},{"Company":"KARTHIKA NADAR","Segment":"Unit","Sales Exec.":"FO","Category":"Room","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":1.0,"Dec":0.0,"Jan":0.0,"Total":1.0},{"Company":"KLAUS UNION ENGINEERING INDIA PRIVATE LI","Segment":"Unit","Sales Exec.":"SG","Category":"Room","Apr":0.0,"May":3.0,"Jun":6.0,"Jul":9.0,"Aug":0.0,"Sep":4.0,"Oct":0.0,"Nov":4.0,"Dec":0.0,"Jan":0.0,"Total":26.0},{"Company":"KNORR BREMSE SYSTEMS FOR COMMERCIAL VEHICLES INDIA PVT LTD","Segment":"OTA","Sales Exec.":"AK","Category":"Room","Apr":1.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":1.0},{"Company":"KPIT TECHNOLOGIES LTD.","Segment":"Unit","Sales Exec.":"SG","Category":"Room","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":1.0,"Nov":0.0,"Dec":3.0,"Jan":0.0,"Total":4.0},{"Company":"KTA SPINDLE TOOLINGS","Segment":"Unit","Sales Exec.":"SG","Category":"Room","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":5.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":5.0},{"Company":"KUI PUMPS PRIVATE LIMITED","Segment":"Unit","Sales Exec.":"SG","Category":"Room","Apr":0.0,"May":0.0,"Jun":1.0,"Jul":9.0,"Aug":0.0,"Sep":0.0,"Oct":6.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":16.0},{"Company":"KYORITSU ELECTRIC INDIA PVT LTD","Segment":"Unit","Sales Exec.":"SG","Category":"Room","Apr":4.0,"May":5.0,"Jun":4.0,"Jul":5.0,"Aug":3.0,"Sep":4.0,"Oct":6.0,"Nov":8.0,"Dec":8.0,"Jan":3.0,"Total":50.0},{"Company":"LALIT SHINDE","Segment":"Unit","Sales Exec.":"FO","Category":"Room","Apr":9.0,"May":9.0,"Jun":3.0,"Jul":2.0,"Aug":3.0,"Sep":0.0,"Oct":4.0,"Nov":2.0,"Dec":5.0,"Jan":1.0,"Total":38.0},{"Company":"LEADING EDGE TRAVEL MANAGEMENT PVT. LTD.","Segment":"RSO(M)","Sales Exec.":"SC","Category":"Room","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":3.0,"Jan":0.0,"Total":3.0},{"Company":"LECHLER INDIA PRIVATE LIMITED","Segment":"Unit","Sales Exec.":"FO","Category":"Room","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":1.0,"Jan":0.0,"Total":1.0},{"Company":"LKP SECURITIES LTD","Segment":"Unit","Sales Exec.":"FO","Category":"Room","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":2.0,"Total":2.0},{"Company":"M/S SARLA ADVANTECH PRIVATE LIMITED","Segment":"Unit","Sales Exec.":"FO","Category":"Room","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":2.0,"Dec":0.0,"Jan":0.0,"Total":2.0},{"Company":"MAHLE ANAND FILTER SYSTEMS PRIVATE LIMITED","Segment":"Unit","Sales Exec.":"SG","Category":"Room","Apr":20.0,"May":8.0,"Jun":15.0,"Jul":0.0,"Aug":16.0,"Sep":27.0,"Oct":36.0,"Nov":24.0,"Dec":1.0,"Jan":4.0,"Total":151.0},{"Company":"MAKE MY TRIP","Segment":"OTA","Sales Exec.":"AK","Category":"Room","Apr":226.0,"May":179.0,"Jun":156.0,"Jul":39.0,"Aug":40.0,"Sep":65.0,"Oct":123.0,"Nov":137.0,"Dec":358.0,"Jan":66.0,"Total":1389.0},{"Company":"MAS AUTO SYSTEMS PVT LTD","Segment":"Unit","Sales Exec.":"FO","Category":"Room","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":2.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":2.0},{"Company":"MATTER MOTOR WORKS PRIVATE LIMITED","Segment":"RSO(A)","Sales Exec.":"AC","Category":"Room","Apr":0.0,"May":0.0,"Jun":7.0,"Jul":17.0,"Aug":26.0,"Sep":10.0,"Oct":33.0,"Nov":16.0,"Dec":29.0,"Jan":7.0,"Total":145.0},{"Company":"MEMORA JEWELS","Segment":"OTA","Sales Exec.":"AK","Category":"Room","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":1.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":1.0},{"Company":"METTLER TOLEDO INDIA PRIVATE LIMITED","Segment":"OTA","Sales Exec.":"AK","Category":"Room","Apr":1.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":1.0},{"Company":"MINDA CORPORATION LIMITED","Segment":"Unit","Sales Exec.":"FO","Category":"Room","Apr":5.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":5.0},{"Company":"MSYS TECH INDIA PRIVATE LIMITED","Segment":"Unit","Sales Exec.":"SG","Category":"Room","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":6.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":6.0},{"Company":"MSYS TECHNOLOGIES.COM","Segment":"Unit","Sales Exec.":"SG","Category":"Room","Apr":2.0,"May":0.0,"Jun":3.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":5.0},{"Company":"MUKESH KRIPALINI","Segment":"Unit","Sales Exec.":"AT","Category":"Room","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":1.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":11.0,"Jan":0.0,"Total":12.0},{"Company":"N S N GROUP","Segment":"Unit","Sales Exec.":"SG","Category":"Room","Apr":1.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":1.0},{"Company":"NISHNAI HOLIDAYS","Segment":"RSO(M)","Sales Exec.":"SC","Category":"Room","Apr":0.0,"May":40.0,"Jun":28.0,"Jul":0.0,"Aug":24.0,"Sep":6.0,"Oct":6.0,"Nov":164.0,"Dec":46.0,"Jan":0.0,"Total":314.0},{"Company":"NORMET INDIA PRIVATE LIMITED","Segment":"Unit","Sales Exec.":"FO","Category":"Room","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":2.0,"Jan":0.0,"Total":2.0},{"Company":"NSK BEARINGS INDIA PRIVATE LIMITED","Segment":"Unit","Sales Exec.":"SG","Category":"Room","Apr":1.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":1.0},{"Company":"OJASVEE INTELLIMATION","Segment":"OTA","Sales Exec.":"AK","Category":"Room","Apr":0.0,"May":1.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":1.0},{"Company":"OP MOBILITY","Segment":"Unit","Sales Exec.":"SG","Category":"Room","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":3.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":3.0},{"Company":"ORRITEL HOTEL HINJEWADI","Segment":"Unit","Sales Exec.":"HG","Category":"Room","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":1.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":1.0},{"Company":"PERPETUALBLOCK TECHNOLOGIES PRIVATE LIMITED","Segment":"Unit","Sales Exec.":"SG","Category":"Room","Apr":4.0,"May":10.0,"Jun":0.0,"Jul":0.0,"Aug":10.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":24.0},{"Company":"PERSISTENT SYSTEMS LIMITED","Segment":"Unit","Sales Exec.":"SG","Category":"Room","Apr":0.0,"May":6.0,"Jun":0.0,"Jul":4.0,"Aug":0.0,"Sep":28.0,"Oct":0.0,"Nov":185.0,"Dec":5.0,"Jan":0.0,"Total":228.0},{"Company":"PLASTIC OMNIUM AUTO INERGY INDIA PRIVATE LIMITED","Segment":"Unit","Sales Exec.":"SG","Category":"Room","Apr":3.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":3.0},{"Company":"PRAJ GENX LIMITED","Segment":"Unit","Sales Exec.":"SG","Category":"Room","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":10.0,"Sep":1.0,"Oct":24.0,"Nov":29.0,"Dec":0.0,"Jan":0.0,"Total":64.0},{"Company":"PRAJ INDUSTRIES LTD","Segment":"Unit","Sales Exec.":"SG","Category":"Room","Apr":9.0,"May":19.0,"Jun":30.0,"Jul":41.0,"Aug":104.0,"Sep":65.0,"Oct":39.0,"Nov":5.0,"Dec":58.0,"Jan":19.0,"Total":389.0},{"Company":"PRIME GLOBAL ACCOMMODATION SERVICES PRIVATE LIMITED","Segment":"RSO(A)","Sales Exec.":"AC","Category":"Room","Apr":0.0,"May":0.0,"Jun":40.0,"Jul":0.0,"Aug":0.0,"Sep":10.0,"Oct":0.0,"Nov":10.0,"Dec":0.0,"Jan":0.0,"Total":60.0},{"Company":"PROSPIN PRODUCTS INDIA PRIVATE LIMITED","Segment":"Unit","Sales Exec.":"FO","Category":"Room","Apr":0.0,"May":11.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":11.0},{"Company":"RATNESH DUBEY","Segment":"Unit","Sales Exec.":"FO","Category":"Room","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":1.0,"Dec":0.0,"Jan":0.0,"Total":1.0},{"Company":"RELIABLE ENGINEERING","Segment":"Unit","Sales Exec.":"FO","Category":"Room","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":20.0,"Jan":0.0,"Total":20.0},{"Company":"ROYAL ENFIELD A UnitOF EICHER MOTORS LIMITED","Segment":"Unit","Sales Exec.":"FO","Category":"Room","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":1.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":1.0},{"Company":"SBI LIFE INSURANCE CO.LTD.","Segment":"Unit","Sales Exec.":"SG","Category":"Room","Apr":0.0,"May":31.0,"Jun":0.0,"Jul":0.0,"Aug":43.0,"Sep":0.0,"Oct":7.0,"Nov":4.0,"Dec":49.0,"Jan":43.0,"Total":177.0},{"Company":"SBI LIFE INSURANCE COMPANY LTD","Segment":"Unit","Sales Exec.":"SG","Category":"Room","Apr":0.0,"May":1.0,"Jun":0.0,"Jul":78.0,"Aug":60.0,"Sep":20.0,"Oct":44.0,"Nov":85.0,"Dec":3.0,"Jan":11.0,"Total":302.0},{"Company":"SCMHRD","Segment":"Unit","Sales Exec.":"SG","Category":"Room","Apr":0.0,"May":0.0,"Jun":3.0,"Jul":21.0,"Aug":9.0,"Sep":6.0,"Oct":4.0,"Nov":4.0,"Dec":16.0,"Jan":8.0,"Total":71.0},{"Company":"SELF BOOKING","Segment":"Unit","Sales Exec.":"FO","Category":"Room","Apr":164.0,"May":10.0,"Jun":1.0,"Jul":3.0,"Aug":0.0,"Sep":0.0,"Oct":4.0,"Nov":0.0,"Dec":1.0,"Jan":0.0,"Total":183.0},{"Company":"SHOBHA MAHESH NARAWADE","Segment":"Unit","Sales Exec.":"AT","Category":"Room","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":5.0,"Dec":81.0,"Jan":0.0,"Total":86.0},{"Company":"SHREEJI TRANSLOGISTICS LIMITED","Segment":"OTA","Sales Exec.":"AK","Category":"Room","Apr":1.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":1.0},{"Company":"SMARTEK21 SOFTWARE PRODUCTS AND SERVICES","Segment":"Unit","Sales Exec.":"SG","Category":"Room","Apr":2.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":21.0,"Dec":0.0,"Jan":0.0,"Total":23.0},{"Company":"SOFTWARE TECHNOLOGY PARKS OF INDIA","Segment":"Unit","Sales Exec.":"SS","Category":"Room","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":7.0,"Jan":0.0,"Total":7.0},{"Company":"SPECIALCHAR PRIVATE LIMITED","Segment":"RSO(A)","Sales Exec.":"AC","Category":"Room","Apr":0.0,"May":0.0,"Jun":4.0,"Jul":7.0,"Aug":3.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":14.0},{"Company":"SPECIALITY RESTAURANTS LTD.","Segment":"Unit","Sales Exec.":"SG","Category":"Room","Apr":36.0,"May":5.0,"Jun":0.0,"Jul":5.0,"Aug":12.0,"Sep":1.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":59.0},{"Company":"SPECTACOM GLOBAL PRIVATE LIMITED","Segment":"Unit","Sales Exec.":"FO","Category":"Room","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":2.0,"Dec":0.0,"Jan":0.0,"Total":2.0},{"Company":"SPX FLOW TECHNOLOGY INDIA PVT LTD","Segment":"Unit","Sales Exec.":"SG","Category":"Room","Apr":1.0,"May":1.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":2.0},{"Company":"SQUARE PANDA INDIA LLP","Segment":"Unit","Sales Exec.":"SG","Category":"Room","Apr":0.0,"May":1.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":1.0},{"Company":"STAYONSKILL TECHNOLOGIES PRIVATE LIMITED","Segment":"Unit","Sales Exec.":"FO","Category":"Room","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":2.0,"Dec":0.0,"Jan":0.0,"Total":2.0},{"Company":"STERLING GENERATORS PVT LTD","Segment":"Unit","Sales Exec.":"SG","Category":"Room","Apr":0.0,"May":3.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":3.0},{"Company":"SUNSHINE DESTINATIONZ","Segment":"RSO(M)","Sales Exec.":"SC","Category":"Room","Apr":0.0,"May":28.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":28.0},{"Company":"SYMBIOSIS","Segment":"Unit","Sales Exec.":"SG","Category":"Room","Apr":0.0,"May":0.0,"Jun":3.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":3.0},{"Company":"SYNECHRON DIGITAL PAYMENTS SERVICES PRIVATE LIMITED","Segment":"Unit","Sales Exec.":"SG","Category":"Room","Apr":9.0,"May":8.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":17.0},{"Company":"SYNECHRON TECHNOLOGIES PVT.LTD.","Segment":"Unit","Sales Exec.":"SG","Category":"Room","Apr":73.0,"May":80.0,"Jun":140.0,"Jul":52.0,"Aug":25.0,"Sep":17.0,"Oct":30.0,"Nov":30.0,"Dec":1.0,"Jan":10.0,"Total":458.0},{"Company":"SYNGENTA INDIA PRIVATE LIMITED","Segment":"Unit","Sales Exec.":"SG","Category":"Room","Apr":6.0,"May":6.0,"Jun":0.0,"Jul":6.0,"Aug":6.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":24.0},{"Company":"SYNXIS","Segment":"OTA","Sales Exec.":"AK","Category":"Room","Apr":8.0,"May":1.0,"Jun":2.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":2.0,"Nov":0.0,"Dec":2.0,"Jan":9.0,"Total":24.0},{"Company":"SYNXIS CORPORATE","Segment":"OTA","Sales Exec.":"AK","Category":"Room","Apr":0.0,"May":13.0,"Jun":13.0,"Jul":14.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":40.0},{"Company":"TAMARIND GLOBAL SERVICES PVT LTD","Segment":"RSO(M)","Sales Exec.":"SC","Category":"Room","Apr":14.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":14.0},{"Company":"TATA AUTOCOMP SYSTEMS LIMITED","Segment":"Unit","Sales Exec.":"SG","Category":"Room","Apr":0.0,"May":28.0,"Jun":10.0,"Jul":14.0,"Aug":49.0,"Sep":33.0,"Oct":7.0,"Nov":0.0,"Dec":8.0,"Jan":0.0,"Total":149.0},{"Company":"TATA CAPITAL LTD","Segment":"OTA","Sales Exec.":"AK","Category":"Room","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":1.0,"Jan":0.0,"Total":1.0},{"Company":"TATA CONSULTANCY SERVICES LIMITED","Segment":"Unit","Sales Exec.":"SG","Category":"Room","Apr":14.0,"May":10.0,"Jun":17.0,"Jul":24.0,"Aug":2.0,"Sep":28.0,"Oct":30.0,"Nov":4.0,"Dec":0.0,"Jan":0.0,"Total":129.0},{"Company":"TATA MOTORS LIMITED","Segment":"OTA","Sales Exec.":"AK","Category":"Room","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":1.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":1.0},{"Company":"TATA PROJECTS LIMITED","Segment":"Unit","Sales Exec.":"SG","Category":"Room","Apr":0.0,"May":1.0,"Jun":0.0,"Jul":0.0,"Aug":7.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":8.0},{"Company":"TECHPERT PROCESS INDUSTRIES","Segment":"Unit","Sales Exec.":"SG","Category":"Room","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":1.0,"Nov":1.0,"Dec":0.0,"Jan":0.0,"Total":2.0},{"Company":"TRAVEL GURU","Segment":"OTA","Sales Exec.":"AK","Category":"Room","Apr":25.0,"May":16.0,"Jun":16.0,"Jul":1.0,"Aug":0.0,"Sep":7.0,"Oct":4.0,"Nov":6.0,"Dec":14.0,"Jan":2.0,"Total":91.0},{"Company":"TRAVOTRAV","Segment":"Unit","Sales Exec.":"SS","Category":"Room","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":21.0,"Oct":16.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":37.0},{"Company":"TUBEFIT ENGINEERS","Segment":"Unit","Sales Exec.":"FO","Category":"Room","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":2.0,"Jan":0.0,"Total":2.0},{"Company":"UPL LIMITED","Segment":"Unit","Sales Exec.":"FO","Category":"Room","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":1.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":1.0},{"Company":"UPSCALE MEDIA PRIVATE LIMITED","Segment":"Unit","Sales Exec.":"FO","Category":"Room","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":2.0,"Jan":0.0,"Total":2.0},{"Company":"URSMARTSPOC - A UnitOF B H & COMPANY","Segment":"Unit","Sales Exec.":"FO","Category":"Room","Apr":0.0,"May":0.0,"Jun":1.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":1.0},{"Company":"VARUN BEVERAGES LIMITED","Segment":"Unit","Sales Exec.":"FO","Category":"Room","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":1.0,"Jan":0.0,"Total":1.0},{"Company":"VOLANTE TECHNOLOGIES INDIA PRIVATE LIMIT","Segment":"Unit","Sales Exec.":"SG","Category":"Room","Apr":0.0,"May":11.0,"Jun":2.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":2.0,"Jan":0.0,"Total":15.0},{"Company":"WAGONS LEARNING LIMITED","Segment":"Unit","Sales Exec.":"SG","Category":"Room","Apr":451.0,"May":54.0,"Jun":160.0,"Jul":543.0,"Aug":684.0,"Sep":965.0,"Oct":439.0,"Nov":387.0,"Dec":299.0,"Jan":221.0,"Total":4203.0},{"Company":"WALKIN","Segment":"Unit","Sales Exec.":"FO","Category":"Room","Apr":0.0,"May":1.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":1.0},{"Company":"WALTERPACK AUTOMOTIVE PRODUCTS INDIA PRIVATE LIMITED","Segment":"RSO(A)","Sales Exec.":"AC","Category":"Room","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":5.0,"Nov":0.0,"Dec":9.0,"Jan":7.0,"Total":21.0},{"Company":"WEX TECHNOLOGIES PRIVATE LIMITED","Segment":"Unit","Sales Exec.":"SG","Category":"Room","Apr":0.0,"May":19.0,"Jun":2.0,"Jul":1.0,"Aug":16.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":38.0},{"Company":"WIPRO LIMITED","Segment":"RSO(S)","Sales Exec.":"VA","Category":"Room","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":0.0,"Aug":19.0,"Sep":6.0,"Oct":1.0,"Nov":7.0,"Dec":43.0,"Jan":2.0,"Total":78.0},{"Company":"WIPRO TECHNOLOGIES","Segment":"RSO(S)","Sales Exec.":"VA","Category":"Room","Apr":0.0,"May":0.0,"Jun":0.0,"Jul":1.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":1.0},{"Company":"YATRA","Segment":"OTA","Sales Exec.":"AK","Category":"Room","Apr":24.0,"May":6.0,"Jun":7.0,"Jul":2.0,"Aug":4.0,"Sep":3.0,"Oct":5.0,"Nov":0.0,"Dec":56.0,"Jan":1.0,"Total":108.0},{"Company":"YATRA CORPORATE","Segment":"RSO(S)","Sales Exec.":"VA","Category":"Room","Apr":31.0,"May":39.0,"Jun":62.0,"Jul":26.0,"Aug":8.0,"Sep":7.0,"Oct":15.0,"Nov":1.0,"Dec":1.0,"Jan":2.0,"Total":192.0},{"Company":"ZUVENTUS HEALTHCARELTD","Segment":"RSO(M)","Sales Exec.":"SC","Category":"Room","Apr":0.0,"May":0.0,"Jun":1.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":1.0},{"Company":"ZYDUS LIFESCIENCES LIMITED","Segment":"Unit","Sales Exec.":"FO","Category":"Room","Apr":0.0,"May":2.0,"Jun":0.0,"Jul":0.0,"Aug":0.0,"Sep":0.0,"Oct":0.0,"Nov":0.0,"Dec":0.0,"Jan":0.0,"Total":2.0}];
+
+const MONTHS = ['Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec','Jan'];
+const SEGMENTS = ['Unit','RSO(S)','OTA','RSO(M)','RSO(A)'];
+const EXECS = ['FO','SG','VA','AK','SC','HG','CS','AT','AC','SS'];
+const CATEGORIES = ['Revenue','Room'];
+const SEG_COLORS = {'Unit':'#3b82f6','RSO(S)':'#06b6d4','OTA':'#a78bfa','RSO(M)':'#f59e0b','RSO(A)':'#10b981'};
+
+// STATE
+let selSegs = new Set(), selExecs = new Set(), selMonths = new Set(), selCats = new Set();
+let sortCol = 'Total', sortDir = -1, tablePage = 0;
+const PAGE_SIZE = 15;
+let charts = {};
+
+// ========== FILTER ==========
+function getFiltered() {
+  return RAW.filter(r => {
+    if (selSegs.size && !selSegs.has(r['Segment'])) return false;
+    if (selExecs.size && !selExecs.has(r['Sales Exec.'])) return false;
+    if (selCats.size && !selCats.has(r['Category'])) return false;
+    return true;
+  });
+}
+
+function getMonthValue(r, m) {
+  return selMonths.size ? (selMonths.has(m) ? (r[m]||0) : 0) : (r[m]||0);
+}
+
+function getRowTotal(r) {
+  if (selMonths.size) return MONTHS.filter(m=>selMonths.has(m)).reduce((s,m)=>s+(r[m]||0),0);
+  return r['Total'];
+}
+
+// ========== PILL BUILDERS ==========
+function buildPills(containerId, items, selSet, cls) {
+  const c = document.getElementById(containerId);
+  c.innerHTML = '';
+  items.forEach(item => {
+    const p = document.createElement('button');
+    p.className = 'pill' + (selSet.has(item) ? ' '+cls : '');
+    p.textContent = item;
+    p.onclick = () => togglePill(selSet, item, containerId, items, cls);
+    c.appendChild(p);
+  });
+}
+
+function togglePill(selSet, item, containerId, items, cls) {
+  selSet.has(item) ? selSet.delete(item) : selSet.add(item);
+  buildPills(containerId, items, selSet, cls);
+  refresh();
+}
+
+function resetFilters() {
+  selSegs.clear(); selExecs.clear(); selMonths.clear(); selCats.clear();
+  buildAllPills();
+  refresh();
+}
+
+function buildAllPills() {
+  buildPills('seg-pills', SEGMENTS, selSegs, 'active-segment');
+  buildPills('exec-pills', EXECS, selExecs, 'active-exec');
+  buildPills('month-pills', MONTHS, selMonths, 'active-month');
+  buildPills('cat-pills', CATEGORIES, selCats, 'active-category');
+}
+
+// ========== KPIs ==========
+function fmt(n) {
+  if (n >= 1e7) return '₹' + (n/1e7).toFixed(2) + 'Cr';
+  if (n >= 1e5) return '₹' + (n/1e5).toFixed(2) + 'L';
+  return '₹' + n.toLocaleString('en-IN', {maximumFractionDigits:0});
+}
+
+function updateKPIs(data) {
+  const rev = data.filter(r=>r.Category==='Revenue');
+  const room = data.filter(r=>r.Category==='Room');
+  const totalRev = rev.reduce((s,r)=>s+getRowTotal(r),0);
+  const totalRooms = room.reduce((s,r)=>s+getRowTotal(r),0);
+  const companies = new Set(data.map(r=>r.Company)).size;
+  const arpr = totalRooms > 0 ? totalRev/totalRooms : 0;
+
+  document.getElementById('kpi-revenue').textContent = fmt(totalRev);
+  document.getElementById('kpi-revenue-sub').textContent = 'Total Revenue';
+  document.getElementById('kpi-rooms').textContent = Math.round(totalRooms).toLocaleString('en-IN');
+  document.getElementById('kpi-rooms-sub').textContent = 'Total Room Nights';
+  document.getElementById('kpi-companies').textContent = companies;
+  document.getElementById('kpi-companies-sub').textContent = 'Unique Companies';
+  document.getElementById('kpi-arpr').textContent = arpr > 0 ? '₹' + Math.round(arpr).toLocaleString('en-IN') : '—';
+  document.getElementById('kpi-arpr-sub').textContent = 'Rev per Room Night';
+
+  // Badge + summary
+  document.getElementById('record-count').textContent = data.length + ' Records';
+  const parts = [];
+  if (selSegs.size) parts.push([...selSegs].join(', '));
+  if (selExecs.size) parts.push('Exec: ' + [...selExecs].join(', '));
+  if (selCats.size) parts.push([...selCats].join(', '));
+  if (selMonths.size) parts.push([...selMonths].join(', ')); else parts.push('Apr – Jan');
+  document.getElementById('filter-summary').textContent = (parts.length>1?parts.slice(0,-1).join(' • ')+' • '+parts[parts.length-1]:parts[0]||'Showing all data • Apr – Jan');
+}
+
+// ========== CHART HELPERS ==========
+const chartDefaults = {
+  color: '#e2e8f0',
+  plugins: { legend: { labels: { color: '#94a3b8', font: { family: 'Outfit', size: 11 }, boxWidth: 10, padding: 10 } },
+             tooltip: { backgroundColor: '#1a2236', borderColor: '#232e45', borderWidth: 1, titleColor: '#e2e8f0', bodyColor: '#94a3b8', padding: 10 } },
+  scales: {
+    x: { ticks: { color: '#64748b', font: { family: 'DM Mono', size: 10 } }, grid: { color: '#1e2c44' } },
+    y: { ticks: { color: '#64748b', font: { family: 'DM Mono', size: 10 }, callback: v => v>=1e6?(v/1e6).toFixed(1)+'M':v>=1e3?(v/1e3).toFixed(0)+'K':v }, grid: { color: '#1e2c44' } }
+  }
+};
+
+function destroyChart(key) { if (charts[key]) { charts[key].destroy(); charts[key] = null; } }
+
+// ========== TREND CHART ==========
+function updateTrendChart(data) {
+  destroyChart('trend');
+  const rev = data.filter(r=>r.Category==='Revenue');
+  const room = data.filter(r=>r.Category==='Room');
+  const revData = MONTHS.map(m => rev.reduce((s,r)=>s+(r[m]||0),0));
+  const roomData = MONTHS.map(m => room.reduce((s,r)=>s+(r[m]||0),0));
+  const ctx = document.getElementById('trendChart').getContext('2d');
+  const grad1 = ctx.createLinearGradient(0,0,0,200);
+  grad1.addColorStop(0,'rgba(59,130,246,0.3)');
+  grad1.addColorStop(1,'rgba(59,130,246,0)');
+  charts['trend'] = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: MONTHS,
+      datasets: [{
+        label: 'Revenue (₹)',
+        data: revData,
+        borderColor: '#3b82f6',
+        backgroundColor: grad1,
+        fill: true,
+        tension: 0.4,
+        pointBackgroundColor: '#3b82f6',
+        pointRadius: 4,
+        yAxisID: 'y'
+      },{
+        label: 'Rooms',
+        data: roomData,
+        borderColor: '#06b6d4',
+        backgroundColor: 'transparent',
+        fill: false,
+        tension: 0.4,
+        borderDash: [5,3],
+        pointBackgroundColor: '#06b6d4',
+        pointRadius: 3,
+        yAxisID: 'y1'
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: chartDefaults.plugins,
+      scales: {
+        x: chartDefaults.scales.x,
+        y: { ...chartDefaults.scales.y, position: 'left' },
+        y1: { ticks: { color: '#64748b', font: { family: 'DM Mono', size: 10 } }, grid: { display: false }, position: 'right' }
+      }
+    }
+  });
+}
+
+// ========== SEGMENT PIE ==========
+function updateSegChart(data) {
+  destroyChart('seg');
+  const rev = data.filter(r=>r.Category==='Revenue');
+  const bySegment = {};
+  SEGMENTS.forEach(s=>bySegment[s]=0);
+  rev.forEach(r=>{ bySegment[r.Segment] = (bySegment[r.Segment]||0) + getRowTotal(r); });
+  const labels = SEGMENTS.filter(s=>bySegment[s]>0);
+  const values = labels.map(s=>bySegment[s]);
+  const colors = labels.map(s=>SEG_COLORS[s]||'#64748b');
+  charts['seg'] = new Chart(document.getElementById('segChart').getContext('2d'), {
+    type: 'doughnut',
+    data: { labels, datasets: [{ data: values, backgroundColor: colors, borderColor: '#131929', borderWidth: 3, hoverOffset: 6 }] },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        ...chartDefaults.plugins,
+        legend: { ...chartDefaults.plugins.legend, position: 'bottom' },
+        tooltip: { ...chartDefaults.plugins.tooltip, callbacks: { label: ctx => ctx.label + ': ₹' + (ctx.raw/1e5).toFixed(1) + 'L (' + ((ctx.raw/values.reduce((a,b)=>a+b,0))*100).toFixed(1) + '%)' } }
+      }
+    }
+  });
+}
+
+// ========== EXEC BAR ==========
+function updateExecChart(data) {
+  destroyChart('exec');
+  const rev = data.filter(r=>r.Category==='Revenue');
+  const byExec = {};
+  EXECS.forEach(e=>byExec[e]=0);
+  rev.forEach(r=>{ byExec[r['Sales Exec.']] = (byExec[r['Sales Exec.']]||0) + getRowTotal(r); });
+  const sorted = Object.entries(byExec).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
+  const labels = sorted.map(([k])=>k);
+  const values = sorted.map(([,v])=>v);
+  const colors = labels.map((_,i) => `hsl(${210+i*18},70%,${55+i*2}%)`);
+  charts['exec'] = new Chart(document.getElementById('execChart').getContext('2d'), {
+    type: 'bar',
+    data: { labels, datasets: [{ label: 'Revenue', data: values, backgroundColor: colors, borderRadius: 6, borderSkipped: false }] },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { ...chartDefaults.plugins, legend: { display: false }, tooltip: { ...chartDefaults.plugins.tooltip, callbacks: { label: ctx => '₹' + (ctx.raw/1e5).toFixed(1) + 'L' } } },
+      scales: { x: chartDefaults.scales.x, y: chartDefaults.scales.y }
+    }
+  });
+}
+
+// ========== TOP 10 COMPANIES ==========
+function updateCompChart(data) {
+  destroyChart('comp');
+  const rev = data.filter(r=>r.Category==='Revenue');
+  const byComp = {};
+  rev.forEach(r=>{ byComp[r.Company] = (byComp[r.Company]||0) + getRowTotal(r); });
+  const top10 = Object.entries(byComp).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  const labels = top10.map(([k])=>k.length>20?k.slice(0,18)+'…':k);
+  const values = top10.map(([,v])=>v);
+  charts['comp'] = new Chart(document.getElementById('compChart').getContext('2d'), {
+    type: 'bar',
+    data: { labels, datasets: [{ label: 'Revenue', data: values, backgroundColor: 'rgba(167,139,250,0.7)', borderColor: '#a78bfa', borderWidth: 1, borderRadius: 4 }] },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { ...chartDefaults.plugins, legend: { display: false }, tooltip: { ...chartDefaults.plugins.tooltip, callbacks: { label: ctx => '₹' + (ctx.raw/1e5).toFixed(1) + 'L' } } },
+      scales: {
+        x: chartDefaults.scales.x,
+        y: { ticks: { color: '#94a3b8', font: { family: 'Outfit', size: 10 } }, grid: { color: '#1e2c44' } }
+      }
+    }
+  });
+}
+
+// ========== DUAL CHART ==========
+function updateDualChart(data) {
+  destroyChart('dual');
+  const rev = data.filter(r=>r.Category==='Revenue');
+  const room = data.filter(r=>r.Category==='Room');
+  const revData = MONTHS.map(m => rev.reduce((s,r)=>s+(r[m]||0),0));
+  const roomData = MONTHS.map(m => room.reduce((s,r)=>s+(r[m]||0),0));
+  charts['dual'] = new Chart(document.getElementById('dualChart').getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: MONTHS,
+      datasets: [
+        { type: 'bar', label: 'Revenue', data: revData, backgroundColor: 'rgba(59,130,246,0.6)', borderRadius: 4, yAxisID: 'y' },
+        { type: 'line', label: 'Rooms', data: roomData, borderColor: '#10b981', backgroundColor: 'transparent', pointBackgroundColor: '#10b981', tension: 0.3, pointRadius: 3, yAxisID: 'y1' }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: chartDefaults.plugins,
+      scales: {
+        x: chartDefaults.scales.x,
+        y: { ...chartDefaults.scales.y, position: 'left' },
+        y1: { ticks: { color: '#64748b', font: { size: 10 } }, grid: { display: false }, position: 'right' }
+      }
+    }
+  });
+}
+
+// ========== TABLE ==========
+function sortTable(col) {
+  if (sortCol === col) sortDir *= -1; else { sortCol = col; sortDir = -1; }
+  tablePage = 0;
+  renderTable();
+}
+
+function renderTable() {
+  const search = document.getElementById('tableSearch').value.toLowerCase();
+  let data = getFiltered().map(r => ({ ...r, _total: getRowTotal(r) }));
+  if (search) data = data.filter(r => r.Company.toLowerCase().includes(search));
+  data.sort((a,b) => {
+    const av = sortCol === 'Total' ? a._total : (a[sortCol]||'');
+    const bv = sortCol === 'Total' ? b._total : (b[sortCol]||'');
+    if (typeof av === 'number') return (av - bv) * sortDir;
+    return av.localeCompare(bv) * sortDir;
+  });
+  const maxTotal = Math.max(...data.map(r=>r._total), 1);
+  const total = data.length;
+  const start = tablePage * PAGE_SIZE;
+  const page = data.slice(start, start + PAGE_SIZE);
+
+  const segBadgeClass = s => ({ 'Unit':'badge-unit','RSO(S)':'badge-rso-s','OTA':'badge-ota','RSO(M)':'badge-rso-m','RSO(A)':'badge-rso-a' }[s]||'');
+
+  document.getElementById('tableBody').innerHTML = page.map(r => {
+    const pct = ((r._total / maxTotal) * 90).toFixed(0);
+    const share = maxTotal > 0 ? ((r._total / data.reduce((s,x)=>s+x._total,0))*100).toFixed(1) : '0.0';
+    return `<tr>
+      <td title="${r.Company}">${r.Company.length>30?r.Company.slice(0,28)+'…':r.Company}</td>
+      <td><span class="badge ${segBadgeClass(r.Segment)}">${r.Segment}</span></td>
+      <td>${r['Sales Exec.']}</td>
+      <td>${r.Category}</td>
+      <td class="num">₹${r._total.toLocaleString('en-IN',{maximumFractionDigits:0})}<span class="bar-mini" style="width:${pct}px"></span></td>
+      <td class="num">${share}%</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('page-info').textContent = `Showing ${start+1}–${Math.min(start+PAGE_SIZE, total)} of ${total}`;
+  document.getElementById('prevBtn').disabled = tablePage === 0;
+  document.getElementById('nextBtn').disabled = start + PAGE_SIZE >= total;
+}
+
+function changePage(dir) { tablePage += dir; renderTable(); }
+
+// ========== MAIN REFRESH ==========
+function refresh() {
+  const data = getFiltered();
+  updateKPIs(data);
+  updateTrendChart(data);
+  updateSegChart(data);
+  updateExecChart(data);
+  updateCompChart(data);
+  updateDualChart(data);
+  tablePage = 0;
+  renderTable();
+}
+
+// ========== INIT ==========
+Chart.defaults.color = '#94a3b8';
+Chart.defaults.font.family = 'Outfit';
+buildAllPills();
+refresh();
+</script>
+</body>
+</html>

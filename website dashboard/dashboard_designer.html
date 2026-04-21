@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Budget Vs Actual Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkBg: '#0F1115',
+                        cardBg: '#1C1F26',
+                        accentBlue: '#3B82F6',
+                        positive: '#10B981',
+                        negative: '#EF4444',
+                        mutedText: '#9CA3AF',
+                        borderLight: 'rgba(255, 255, 255, 0.05)',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Outfit', 'sans-serif'],
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #0F1115;
+            color: #F3F4F6;
+            font-family: 'Inter', sans-serif;
+        }
+        .glass-card {
+            background: rgba(28, 31, 38, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .glass-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(59, 130, 246, 0.3);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #1C1F26;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #3B82F6;
+            border-radius: 10px;
+        }
+        .stat-value {
+            font-family: 'Outfit', sans-serif;
+            background: linear-gradient(to bottom right, #fff, #9CA3AF);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .gradient-border {
+            position: relative;
+            border-radius: 1rem;
+        }
+        .gradient-border::before {
+            content: "";
+            position: absolute;
+            inset: -1px;
+            border-radius: 1rem;
+            padding: 1px;
+            background: linear-gradient(45deg, transparent, rgba(59, 130, 246, 0.5), transparent);
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body class="min-h-screen overflow-x-hidden custom-scrollbar">
+
+    <!-- Top Navigation Header -->
+    <header class="sticky top-0 z-50 w-full px-6 py-4 glass-card border-b border-borderLight mb-6">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-accentBlue rounded-xl flex items-center justify-center shadow-lg shadow-blue-900/20">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                </div>
+                <h1 class="text-2xl font-display font-bold tracking-tight text-white uppercase">Budget Vs Actual</h1>
+            </div>
+            
+            <div class="flex flex-wrap items-center gap-4 text-sm">
+                <div class="flex items-center gap-2 px-4 py-2 bg-darkBg/50 rounded-full border border-borderLight">
+                    <span class="w-2 h-2 rounded-full bg-positive animate-pulse"></span>
+                    <span class="text-mutedText">Live Updates</span>
+                </div>
+                <div class="text-mutedText italic" id="timestamp">Updated: Oct 24, 2024 14:32:01</div>
+            </div>
+        </div>
+    </header>
+
+    <div class="max-w-7xl mx-auto px-6 pb-12">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <!-- Sidebar Navigation / Filters -->
+            <aside class="lg:col-span-3 space-y-6">
+                <div class="glass-card p-6 rounded-2xl">
+                    <h3 class="text-sm font-semibold text-white uppercase tracking-wider mb-4 flex items-center gap-2">
+                        <svg class="w-4 h-4 text-accentBlue" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
+                        Filters
+                    </h3>
+                    
+                    <div class="space-y-6">
+                        <div>
+                            <label class="block text-xs font-medium text-mutedText mb-2">Department</label>
+                            <select class="w-full bg-darkBg border border-borderLight rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accentBlue/50 transition-all">
+                                <option>All Departments</option>
+                                <option>Engineering</option>
+                                <option>Marketing</option>
+                                <option>Sales</option>
+                                <option>Human Resources</option>
+                                <option>Operations</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-xs font-medium text-mutedText mb-2">Expense Category</label>
+                            <div class="space-y-2">
+                                <label class="flex items-center gap-3 group cursor-pointer">
+                                    <input type="checkbox" checked class="w-4 h-4 rounded bg-darkBg border-borderLight text-accentBlue focus:ring-offset-0 focus:ring-accentBlue">
+                                    <span class="text-sm text-mutedText group-hover:text-white transition-colors">Payroll</span>
+                                </label>
+                                <label class="flex items-center gap-3 group cursor-pointer">
+                                    <input type="checkbox" checked class="w-4 h-4 rounded bg-darkBg border-borderLight text-accentBlue focus:ring-offset-0 focus:ring-accentBlue">
+                                    <span class="text-sm text-mutedText group-hover:text-white transition-colors">Software SaaS</span>
+                                </label>
+                                <label class="flex items-center gap-3 group cursor-pointer">
+                                    <input type="checkbox" checked class="w-4 h-4 rounded bg-darkBg border-borderLight text-accentBlue focus:ring-offset-0 focus:ring-accentBlue">
+                                    <span class="text-sm text-mutedText group-hover:text-white transition-colors">Travel</span>
+                                </label>
+                                <label class="flex items-center gap-3 group cursor-pointer">
+                                    <input type="checkbox" checked class="w-4 h-4 rounded bg-darkBg border-borderLight text-accentBlue focus:ring-offset-0 focus:ring-accentBlue">
+                                    <span class="text-sm text-mutedText group-hover:text-white transition-colors">Marketing Ads</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="pt-4 border-t border-borderLight">
+                            <button class="w-full py-2 bg-accentBlue/10 hover:bg-accentBlue/20 text-accentBlue font-semibold rounded-xl transition-all border border-accentBlue/20">
+                                Apply Changes
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Small Alert / Tip -->
+                <div class="p-5 rounded-2xl bg-gradient-to-br from-accentBlue/20 to-transparent border border-accentBlue/30">
+                    <p class="text-sm leading-relaxed">
+                        <span class="font-bold text-accentBlue italic">Insight:</span> 
+                        Payroll variance is currently within 2% margin. Marketing overspend observed in Q3 due to regional campaigns.
+                    </p>
+                </div>
+            </aside>
+
+            <!-- Main Content -->
+            <main class="lg:col-span-9 space-y-6">
+                
+                <!-- KPI Banner -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="glass-card p-6 rounded-2xl">
+                        <p class="text-xs font-medium text-mutedText uppercase tracking-widest mb-1">Total Budget</p>
+                        <h2 class="text-3xl font-bold stat-value">$1,240,000</h2>
+                        <p class="text-xs text-mutedText mt-2">Fiscal Year 2024</p>
+                    </div>
+                    <div class="glass-card p-6 rounded-2xl">
+                        <p class="text-xs font-medium text-mutedText uppercase tracking-widest mb-1">Total Actuals</p>
+                        <h2 class="text-3xl font-bold stat-value text-white">$1,105,420</h2>
+                        <div class="flex items-center gap-1 mt-2">
+                            <svg class="w-3 h-3 text-positive" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"></path></svg>
+                            <span class="text-xs text-positive">Within limits</span>
+                        </div>
+                    </div>
+                    <div class="glass-card p-6 rounded-2xl">
+                        <p class="text-xs font-medium text-mutedText uppercase tracking-widest mb-1">Variance</p>
+                        <h2 class="text-3xl font-bold text-positive">$134,580</h2>
+                        <p class="text-xs text-mutedText mt-2">Under Budget</p>
+                    </div>
+                    <div class="glass-card p-6 rounded-2xl">
+                        <p class="text-xs font-medium text-mutedText uppercase tracking-widest mb-1">Utilization</p>
+                        <h2 class="text-3xl font-bold text-accentBlue">89.1%</h2>
+                        <div class="w-full bg-darkBg h-1.5 rounded-full mt-3 overflow-hidden">
+                            <div class="bg-accentBlue h-full rounded-full" style="width: 89%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Section -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Line Chart: Spending Trend -->
+                    <div class="glass-card p-6 rounded-2xl col-span-1 md:col-span-2">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="text-lg font-display font-semibold text-white">Monthly Spending Trend</h3>
+                            <div class="flex gap-4 text-xs font-medium">
+                                <span class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-accentBlue/40"></span> Budget</span>
+                                <span class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-accentBlue"></span> Actual</span>
+                            </div>
+                        </div>
+                        <div class="h-[300px] w-full">
+                            <canvas id="trendChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Bar Chart: Departmental -->
+                    <div class="glass-card p-6 rounded-2xl">
+                        <h3 class="text-lg font-display font-semibold text-white mb-6">Departmental Performance</h3>
+                        <div class="h-[250px] w-full">
+                            <canvas id="deptChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Donut Chart: Expenses -->
+                    <div class="glass-card p-6 rounded-2xl">
+                        <h3 class="text-lg font-display font-semibold text-white mb-6">Expense Breakdown</h3>
+                        <div class="h-[250px] w-full relative flex items-center justify-center">
+                            <canvas id="expenseChart"></canvas>
+                            <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                                <span class="text-mutedText text-xs font-semibold uppercase tracking-widest">Total</span>
+                                <span class="text-xl font-bold">$1.1M</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Gauge Chart: Budget Consumption -->
+                    <div class="glass-card p-6 rounded-2xl col-span-1 md:col-span-2 lg:col-span-1">
+                        <h3 class="text-lg font-display font-semibold text-white mb-4">Consumption Velocity</h3>
+                        <div class="h-[200px] w-full flex flex-col items-center justify-center">
+                            <canvas id="gaugeChart"></canvas>
+                            <div class="mt-[-40px] text-center">
+                                <p class="text-3xl font-bold text-white">89%</p>
+                                <p class="text-xs text-mutedText">Overall organizational exhaust</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Summary Data Table (Alternative Layout Segment) -->
+                    <div class="glass-card p-6 rounded-2xl col-span-1 md:col-span-2 lg:col-span-1">
+                        <h3 class="text-lg font-display font-semibold text-white mb-4">Top Deviations</h3>
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-center p-3 bg-darkBg/30 rounded-xl border border-borderLight">
+                                <div>
+                                    <p class="text-sm font-medium">Cloud Services</p>
+                                    <p class="text-xs text-mutedText">IT Department</p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-sm font-bold text-negative">+$12,400</p>
+                                    <p class="text-[10px] text-mutedText uppercase">Over Budget</p>
+                                </div>
+                            </div>
+                            <div class="flex justify-between items-center p-3 bg-darkBg/30 rounded-xl border border-borderLight">
+                                <div>
+                                    <p class="text-sm font-medium">Hiring Agency Fees</p>
+                                    <p class="text-xs text-mutedText">Human Resources</p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-sm font-bold text-positive">-$18,000</p>
+                                    <p class="text-[10px] text-mutedText uppercase">Under Budget</p>
+                                </div>
+                            </div>
+                            <div class="flex justify-between items-center p-3 bg-darkBg/30 rounded-xl border border-borderLight">
+                                <div>
+                                    <p class="text-sm font-medium">Q4 Travel</p>
+                                    <p class="text-xs text-mutedText">Sales</p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-sm font-bold text-mutedText">0</p>
+                                    <p class="text-[10px] text-mutedText uppercase">On Track</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        // Global Chart Defaults
+        Chart.defaults.color = '#9CA3AF';
+        Chart.defaults.font.family = 'Inter';
+        Chart.defaults.plugins.tooltip.backgroundColor = '#1C1F26';
+        Chart.defaults.plugins.tooltip.padding = 12;
+        Chart.defaults.plugins.tooltip.titleFont = { size: 14, weight: 'bold' };
+        Chart.defaults.plugins.tooltip.bodySpacing = 8;
+        Chart.defaults.plugins.tooltip.borderColor = 'rgba(255,255,255,0.1)';
+        Chart.defaults.plugins.tooltip.borderWidth = 1;
+
+        // 1. Spending Trend (Line Chart)
+        const trendCtx = document.getElementById('trendChart').getContext('2d');
+        const gradientLine = trendCtx.createLinearGradient(0, 0, 0, 300);
+        gradientLine.addColorStop(0, 'rgba(59, 130, 246, 0.3)');
+        gradientLine.addColorStop(1, 'rgba(59, 130, 246, 0)');
+
+        new Chart(trendCtx, {
+            type: 'line',
+            data: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct'],
+                datasets: [
+                    {
+                        label: 'Actual',
+                        data: [85000, 92000, 110000, 98000, 105000, 120000, 115000, 100000, 95000, 110420],
+                        borderColor: '#3B82F6',
+                        backgroundColor: gradientLine,
+                        fill: true,
+                        tension: 0.4,
+                        borderWidth: 3,
+                        pointBackgroundColor: '#3B82F6',
+                        pointRadius: 4,
+                    },
+                    {
+                        label: 'Budget',
+                        data: [100000, 100000, 100000, 100000, 100000, 100000, 100000, 100000, 100000, 100000],
+                        borderColor: 'rgba(59, 130, 246, 0.2)',
+                        borderDash: [5, 5],
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        fill: false
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { intersect: false, mode: 'index' },
+                scales: {
+                    y: { grid: { color: 'rgba(255,255,255,0.05)' }, border: { display: false } },
+                    x: { grid: { display: false }, border: { display: false } }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+
+        // 2. Department Performance (Bar Chart)
+        const deptCtx = document.getElementById('deptChart').getContext('2d');
+        new Chart(deptCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Eng', 'Mkt', 'Sales', 'HR', 'Ops'],
+                datasets: [
+                    {
+                        label: 'Actual',
+                        data: [420000, 250000, 210000, 90000, 135420],
+                        backgroundColor: '#3B82F6',
+                        borderRadius: 6,
+                    },
+                    {
+                        label: 'Budget',
+                        data: [450000, 230000, 250000, 120000, 190000],
+                        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                        borderRadius: 6,
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { grid: { color: 'rgba(255,255,255,0.05)' }, border: { display: false } },
+                    x: { grid: { display: false }, border: { display: false } }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+
+        // 3. Expense Breakdown (Donut)
+        const expenseCtx = document.getElementById('expenseChart').getContext('2d');
+        new Chart(expenseCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Payroll', 'Software', 'Travel', 'Marketing', 'Office'],
+                datasets: [{
+                    data: [600000, 150000, 80000, 180000, 95420],
+                    backgroundColor: [
+                        '#3B82F6',
+                        '#6366F1',
+                        '#8B5CF6',
+                        '#EC4899',
+                        '#10B981'
+                    ],
+                    borderWidth: 0,
+                    hoverOffset: 10
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '75%',
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+
+        // 4. Consumption Gauge
+        const gaugeCtx = document.getElementById('gaugeChart').getContext('2d');
+        new Chart(gaugeCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Spent', 'Remaining'],
+                datasets: [{
+                    data: [89, 11],
+                    backgroundColor: ['#10B981', 'rgba(255,255,255,0.05)'],
+                    circumference: 180,
+                    rotation: 270,
+                    borderWidth: 0,
+                    borderRadius: 10
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '85%',
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { enabled: false }
+                }
+            }
+        });
+
+        // Timestamp script
+        function updateTime() {
+            const now = new Date();
+            const timeStr = now.toLocaleString('en-US', { 
+                month: 'short', 
+                day: 'numeric', 
+                year: 'numeric', 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                second: '2-digit' 
+            });
+            document.getElementById('timestamp').innerText = `Updated: ${timeStr}`;
+        }
+        setInterval(updateTime, 1000);
+        updateTime();
+    </script>
+</body>
+</html>

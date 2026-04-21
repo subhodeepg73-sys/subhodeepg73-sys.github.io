@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Budget vs Actual Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root {
+  --bg: #050a14;
+  --bg2: #08111f;
+  --surface: #0d1a2e;
+  --surface2: #112035;
+  --border: #1c2e47;
+  --border2: #243a56;
+  --green: #00d4aa;
+  --green-dim: rgba(0,212,170,0.12);
+  --red: #ff4d6a;
+  --red-dim: rgba(255,77,106,0.12);
+  --blue: #3b8bff;
+  --blue-dim: rgba(59,139,255,0.12);
+  --amber: #ffb547;
+  --amber-dim: rgba(255,181,71,0.12);
+  --purple: #a78bfa;
+  --purple-dim: rgba(167,139,250,0.12);
+  --cyan: #22d3ee;
+  --text: #e2eaf5;
+  --text2: #8fa8c8;
+  --text3: #4a6585;
+  --font: 'Plus Jakarta Sans', sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  min-height: 100vh;
+}
+
+/* ─── HEADER ─── */
+.topbar {
+  background: linear-gradient(135deg, #0d1a2e 0%, #091625 100%);
+  border-bottom: 1px solid var(--border);
+  padding: 0 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 60px;
+  position: sticky; top:0; z-index: 100;
+}
+.brand { display:flex; align-items:center; gap:12px; }
+.brand-icon {
+  width: 34px; height: 34px; border-radius: 9px;
+  background: linear-gradient(135deg, var(--blue), var(--purple));
+  display: flex; align-items:center; justify-content:center;
+  font-size: 16px;
+}
+.brand-name { font-size:15px; font-weight:700; letter-spacing:-0.3px; }
+.brand-sub { font-size:11px; color:var(--text3); margin-top:1px; }
+.topbar-right { display:flex; align-items:center; gap:10px; }
+.fy-badge {
+  background: var(--blue-dim);
+  border: 1px solid rgba(59,139,255,0.25);
+  color: var(--blue);
+  padding: 5px 12px; border-radius: 20px;
+  font-size: 11px; font-weight: 600; font-family:var(--mono);
+}
+.ytd-note {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text3);
+  padding: 5px 12px; border-radius: 20px;
+  font-size: 11px; font-weight: 500;
+}
+
+/* ─── SLICER BAR ─── */
+.slicer-bar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 28px;
+  display: flex; align-items:center; gap:24px; flex-wrap:wrap;
+}
+.slicer-label {
+  font-size:10px; font-weight:700; color:var(--text3);
+  text-transform:uppercase; letter-spacing:1.2px;
+  white-space:nowrap;
+}
+.month-pills { display:flex; gap:5px; flex-wrap:wrap; }
+.mpill {
+  padding: 4px 11px; border-radius:16px;
+  border: 1.5px solid var(--border);
+  background: transparent;
+  color: var(--text2); font-size:11px; font-weight:600;
+  cursor:pointer; font-family:var(--font);
+  transition: all 0.15s;
+}
+.mpill:hover { border-color:var(--blue); color:var(--blue); }
+.mpill.active {
+  border-color:var(--blue);
+  background: var(--blue-dim);
+  color: #93c5fd;
+}
+.sep { width:1px; height:22px; background:var(--border); }
+.view-btns { display:flex; gap:5px; }
+.vbtn {
+  padding: 4px 12px; border-radius:8px;
+  border: 1.5px solid var(--border);
+  background: transparent;
+  color: var(--text2); font-size:11px; font-weight:600;
+  cursor:pointer; font-family:var(--font); transition:all 0.15s;
+}
+.vbtn.active { border-color:var(--amber); background:var(--amber-dim); color:var(--amber); }
+.vbtn:hover:not(.active) { border-color:var(--text2); color:var(--text); }
+.reset-all {
+  margin-left:auto; padding:4px 13px; border-radius:8px;
+  border: 1.5px solid var(--red); background:var(--red-dim);
+  color: #fca5a5; font-size:11px; font-weight:600;
+  cursor:pointer; font-family:var(--font); transition:all 0.15s;
+}
+.reset-all:hover { background: rgba(255,77,106,0.25); }
+
+/* ─── MAIN LAYOUT ─── */
+.main { padding: 22px 28px; }
+
+/* ─── KPI CARDS ─── */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(5,1fr);
+  gap: 14px;
+  margin-bottom: 20px;
+}
+.kpi {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 18px 20px;
+  position: relative; overflow:hidden;
+  transition: border-color 0.2s;
+}
+.kpi:hover { border-color: var(--border2); }
+.kpi::after {
+  content:''; position:absolute;
+  top:0; left:0; right:0; height:2px;
+}
+.kpi.green::after { background: linear-gradient(90deg, var(--green), var(--cyan)); }
+.kpi.red::after { background: linear-gradient(90deg, var(--red), #ff8fab); }
+.kpi.blue::after { background: linear-gradient(90deg, var(--blue), var(--purple)); }
+.kpi.amber::after { background: linear-gradient(90deg, var(--amber), #fb923c); }
+.kpi.purple::after { background: linear-gradient(90deg, var(--purple), var(--blue)); }
+.kpi-icon { font-size:20px; margin-bottom:10px; }
+.kpi-label { font-size:10px; font-weight:600; color:var(--text3); text-transform:uppercase; letter-spacing:0.8px; margin-bottom:8px; }
+.kpi-val { font-size:22px; font-weight:800; font-family:var(--mono); color:var(--text); line-height:1; }
+.kpi-sub { font-size:11px; margin-top:7px; display:flex; align-items:center; gap:5px; }
+.kpi-var { font-family:var(--mono); font-weight:600; font-size:11px; }
+.kpi-var.pos { color:var(--green); }
+.kpi-var.neg { color:var(--red); }
+.kpi-bgt { color:var(--text3); font-size:10px; }
+.delta-bar {
+  height:3px; border-radius:2px; margin-top:8px;
+  background:var(--border);
+  position:relative; overflow:hidden;
+}
+.delta-bar-fill { height:100%; border-radius:2px; transition:width 0.6s ease; }
+
+/* ─── SECTION TITLES ─── */
+.section-title {
+  font-size:11px; font-weight:700; color:var(--text3);
+  text-transform:uppercase; letter-spacing:1.4px;
+  margin-bottom:14px;
+  display:flex; align-items:center; gap:10px;
+}
+.section-title::after { content:''; flex:1; height:1px; background:var(--border); }
+
+/* ─── CHART CARDS ─── */
+.row2 { display:grid; grid-template-columns:2fr 1.2fr; gap:14px; margin-bottom:20px; }
+.row3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; margin-bottom:20px; }
+.row4 { display:grid; grid-template-columns:1.4fr 1fr; gap:14px; margin-bottom:20px; }
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px;
+}
+.card-title {
+  font-size:12px; font-weight:700; color:var(--text2);
+  text-transform:uppercase; letter-spacing:0.7px;
+  margin-bottom:14px;
+  display:flex; justify-content:space-between; align-items:center;
+}
+.card-tag {
+  font-size:9px; padding:3px 8px; border-radius:10px;
+  font-weight:600; letter-spacing:0.3px; text-transform:none;
+}
+.card-tag.inc { background:var(--green-dim); color:var(--green); }
+.card-tag.exp { background:var(--red-dim); color:var(--red); }
+.card-tag.met { background:var(--blue-dim); color:var(--blue); }
+.chart-wrap { position:relative; }
+
+/* ─── BVA TABLE ─── */
+.bva-table { width:100%; border-collapse:collapse; font-size:11.5px; }
+.bva-table thead th {
+  background: var(--surface2); color:var(--text3);
+  font-size:9.5px; text-transform:uppercase; letter-spacing:0.7px;
+  padding:9px 12px; text-align:left; font-weight:700;
+  border-bottom:1px solid var(--border);
+  cursor:pointer; white-space:nowrap;
+}
+.bva-table thead th:hover { color:var(--text); }
+.bva-table tbody tr { border-bottom:1px solid var(--border); }
+.bva-table tbody tr:hover { background:var(--surface2); }
+.bva-table tbody td { padding:9px 12px; color:var(--text2); white-space:nowrap; }
+.bva-table tbody td:first-child { color:var(--text); font-weight:600; }
+.bva-table .num { font-family:var(--mono); text-align:right; font-size:11px; }
+.bva-table .total-row td { background:var(--surface2); font-weight:700; color:var(--text); }
+.var-pos { color:var(--green); font-family:var(--mono); font-weight:600; }
+.var-neg { color:var(--red); font-family:var(--mono); font-weight:600; }
+.var-zero { color:var(--text3); font-family:var(--mono); }
+.pct-bar { display:inline-flex; align-items:center; gap:6px; }
+.mini-bar {
+  display:inline-block; height:5px; border-radius:3px;
+  background:var(--blue); opacity:0.7; vertical-align:middle;
+}
+
+/* ─── METRICS TABLE ─── */
+.metrics-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.metric-row {
+  background:var(--surface2); border:1px solid var(--border);
+  border-radius:10px; padding:14px 16px;
+}
+.metric-name { font-size:10px; font-weight:700; color:var(--text3); text-transform:uppercase; letter-spacing:0.8px; margin-bottom:8px; }
+.metric-vals { display:flex; justify-content:space-between; align-items:flex-end; }
+.metric-actual { font-size:18px; font-weight:800; font-family:var(--mono); }
+.metric-budget { font-size:11px; color:var(--text3); font-family:var(--mono); }
+.metric-var { font-size:11px; font-weight:700; font-family:var(--mono); }
+
+/* ─── PROFIT SECTION ─── */
+.profit-card {
+  background: linear-gradient(135deg, var(--surface) 0%, #0d1f38 100%);
+  border: 1px solid var(--border2);
+  border-radius:14px; padding:20px; margin-bottom:20px;
+}
+
+@media(max-width:1200px) {
+  .kpi-grid { grid-template-columns:repeat(3,1fr); }
+  .row2,.row4 { grid-template-columns:1fr; }
+  .row3 { grid-template-columns:1fr 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-icon">🏨</div>
+    <div>
+      <div class="brand-name">Budget vs Actual Dashboard</div>
+      <div class="brand-sub">Hotel Performance Analytics</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <span class="fy-badge">FY 2024–25</span>
+    <span class="ytd-note" id="period-label">All Months (Apr–Dec)</span>
+  </div>
+</div>
+
+<!-- SLICER BAR -->
+<div class="slicer-bar">
+  <span class="slicer-label">Month</span>
+  <div class="month-pills" id="month-pills"></div>
+  <div class="sep"></div>
+  <span class="slicer-label">View</span>
+  <div class="view-btns">
+    <button class="vbtn active" data-view="all" onclick="setView('all',this)">All</button>
+    <button class="vbtn" data-view="income" onclick="setView('income',this)">Income</button>
+    <button class="vbtn" data-view="expense" onclick="setView('expense',this)">Expense</button>
+    <button class="vbtn" data-view="metrics" onclick="setView('metrics',this)">Metrics</button>
+  </div>
+  <button class="reset-all" onclick="resetAll()">↺ Reset</button>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- KPIs -->
+  <div class="section-title">Key Performance Indicators</div>
+  <div class="kpi-grid">
+    <div class="kpi green">
+      <div class="kpi-icon">💰</div>
+      <div class="kpi-label">Actual Revenue</div>
+      <div class="kpi-val" id="kpi-act-rev">—</div>
+      <div class="kpi-sub">
+        <span class="kpi-var" id="kpi-rev-var">—</span>
+        <span class="kpi-bgt" id="kpi-rev-bgt">vs Budget</span>
+      </div>
+      <div class="delta-bar"><div class="delta-bar-fill" id="kpi-rev-bar" style="background:var(--green)"></div></div>
+    </div>
+    <div class="kpi red">
+      <div class="kpi-icon">📊</div>
+      <div class="kpi-label">Actual Expense</div>
+      <div class="kpi-val" id="kpi-act-exp">—</div>
+      <div class="kpi-sub">
+        <span class="kpi-var" id="kpi-exp-var">—</span>
+        <span class="kpi-bgt" id="kpi-exp-bgt">vs Budget</span>
+      </div>
+      <div class="delta-bar"><div class="delta-bar-fill" id="kpi-exp-bar" style="background:var(--red)"></div></div>
+    </div>
+    <div class="kpi blue">
+      <div class="kpi-icon">📈</div>
+      <div class="kpi-label">Operating Profit</div>
+      <div class="kpi-val" id="kpi-profit">—</div>
+      <div class="kpi-sub">
+        <span class="kpi-var" id="kpi-profit-var">—</span>
+        <span class="kpi-bgt" id="kpi-profit-bgt">vs Budget</span>
+      </div>
+      <div class="delta-bar"><div class="delta-bar-fill" id="kpi-profit-bar" style="background:var(--blue)"></div></div>
+    </div>
+    <div class="kpi amber">
+      <div class="kpi-icon">🛏</div>
+      <div class="kpi-label">Occupancy %</div>
+      <div class="kpi-val" id="kpi-occ">—</div>
+      <div class="kpi-sub">
+        <span class="kpi-var" id="kpi-occ-var">—</span>
+        <span class="kpi-bgt" id="kpi-occ-bgt">vs Budget</span>
+      </div>
+      <div class="delta-bar"><div class="delta-bar-fill" id="kpi-occ-bar" style="background:var(--amber)"></div></div>
+    </div>
+    <div class="kpi purple">
+      <div class="kpi-icon">🏷</div>
+      <div class="kpi-label">Avg ARR (₹)</div>
+      <div class="kpi-val" id="kpi-arr">—</div>
+      <div class="kpi-sub">
+        <span class="kpi-var" id="kpi-arr-var">—</span>
+        <span class="kpi-bgt" id="kpi-arr-bgt">vs Budget</span>
+      </div>
+      <div class="delta-bar"><div class="delta-bar-fill" id="kpi-arr-bar" style="background:var(--purple)"></div></div>
+    </div>
+  </div>
+
+  <!-- INCOME SECTION -->
+  <div id="sec-income">
+    <div class="section-title">Income — Budget vs Actual</div>
+    <div class="row2">
+      <div class="card">
+        <div class="card-title">Monthly Revenue Trend <span class="card-tag inc">Income</span></div>
+        <div class="chart-wrap" style="height:260px"><canvas id="revTrendChart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Revenue Mix <span class="card-tag inc">Actual</span></div>
+        <div class="chart-wrap" style="height:260px"><canvas id="revMixChart"></canvas></div>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-title">Income Detail — Budget vs Actual <span class="card-tag inc">₹</span></div>
+      <div style="overflow-x:auto">
+        <table class="bva-table" id="incomeTable">
+          <thead>
+            <tr>
+              <th>Category</th>
+              <th class="num">Budget (YTD)</th>
+              <th class="num">Actual (YTD)</th>
+              <th class="num">Variance</th>
+              <th class="num">Var %</th>
+              <th>Progress</th>
+            </tr>
+          </thead>
+          <tbody id="incomeTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- EXPENSE SECTION -->
+  <div id="sec-expense">
+    <div class="section-title">Expense — Budget vs Actual</div>
+    <div class="row2" style="margin-bottom:20px">
+      <div class="card">
+        <div class="card-title">Monthly Expense Trend <span class="card-tag exp">Expense</span></div>
+        <div class="chart-wrap" style="height:260px"><canvas id="expTrendChart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Expense Breakdown <span class="card-tag exp">Actual</span></div>
+        <div class="chart-wrap" style="height:260px"><canvas id="expMixChart"></canvas></div>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-title">Expense Detail — Budget vs Actual <span class="card-tag exp">₹</span></div>
+      <div style="overflow-x:auto">
+        <table class="bva-table" id="expTable">
+          <thead>
+            <tr>
+              <th>Category</th>
+              <th class="num">Budget (YTD)</th>
+              <th class="num">Actual (YTD)</th>
+              <th class="num">Variance</th>
+              <th class="num">Var %</th>
+              <th>Attainment</th>
+            </tr>
+          </thead>
+          <tbody id="expTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROFIT SECTION -->
+  <div id="sec-profit">
+    <div class="section-title">Profitability</div>
+    <div class="row3" style="margin-bottom:20px">
+      <div class="card">
+        <div class="card-title">Operating Profit <span class="card-tag met">Monthly</span></div>
+        <div class="chart-wrap" style="height:210px"><canvas id="profitChart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Budget vs Actual Rev <span class="card-tag inc">Variance</span></div>
+        <div class="chart-wrap" style="height:210px"><canvas id="revVarChart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Budget vs Actual Exp <span class="card-tag exp">Variance</span></div>
+        <div class="chart-wrap" style="height:210px"><canvas id="expVarChart"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- METRICS SECTION -->
+  <div id="sec-metrics">
+    <div class="section-title">Hotel Operational Metrics</div>
+    <div class="row4">
+      <div class="card">
+        <div class="card-title">Occupancy & ARR — Monthly <span class="card-tag met">BvA</span></div>
+        <div class="chart-wrap" style="height:230px"><canvas id="metricsChart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">RevPar — Monthly <span class="card-tag met">BvA</span></div>
+        <div class="chart-wrap" style="height:230px"><canvas id="revparChart"></canvas></div>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-title">Room Night — Budget vs Actual <span class="card-tag met">Monthly</span></div>
+      <div class="chart-wrap" style="height:180px"><canvas id="roomNightChart"></canvas></div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<script>
+// ════════════════════════════════════════════
+// DATA
+// ════════════════════════════════════════════
+const MONTHS = ['Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+const D = {
+  income_actual: {"Room Night":{"monthly":{"Apr":1549,"May":1287,"Jun":1642,"Jul":2186,"Aug":1865,"Sep":1882,"Oct":1512,"Nov":1672,"Dec":1804},"total":15399},"Ambiir":{"monthly":{"Apr":195586,"May":210023,"Jun":196355.5,"Jul":151186.75,"Aug":277502.5,"Sep":147026,"Oct":292836.5,"Nov":236912.5,"Dec":219076},"total":1926504.75},"Room Services":{"monthly":{"Apr":223492,"May":248559,"Jun":187698,"Jul":102597,"Aug":116454,"Sep":119952,"Oct":147819,"Nov":172308,"Dec":150264},"total":1469143},"Purple Pitch":{"monthly":{"Apr":84243,"May":106332,"Jun":102782,"Jul":77604,"Aug":99938,"Sep":46468,"Oct":69624,"Nov":111508,"Dec":161688},"total":860187},"Banquet":{"monthly":{"Apr":338005,"May":452240,"Jun":178767,"Jul":184824,"Aug":290160,"Sep":189468,"Oct":194337,"Nov":467226,"Dec":870336},"total":3165363},"Laundry Revenue":{"monthly":{"Apr":30997,"May":18130,"Jun":15710,"Jul":32313,"Aug":36110,"Sep":52284,"Oct":31686,"Nov":21498,"Dec":24144},"total":262872},"Misc Revenue":{"monthly":{"Apr":1859,"May":2376,"Jun":26115,"Jul":2679,"Aug":1461,"Sep":905,"Oct":623,"Nov":1526,"Dec":1796},"total":39340},"Rooms Revenue":{"monthly":{"Apr":4996006,"May":3961730,"Jun":5561127,"Jul":8304284,"Aug":6969629,"Sep":6502605,"Oct":4800890,"Nov":5647997,"Dec":6237597},"total":52981865},"Food & Beverage":{"monthly":{"Apr":841326,"May":1017154,"Jun":665603,"Jul":516212,"Aug":784055,"Sep":502914,"Oct":704617,"Nov":987955,"Dec":1401364},"total":7421198},"Minor Operating Dept":{"monthly":{"Apr":32856,"May":20506,"Jun":41825,"Jul":34992,"Aug":37571,"Sep":53189,"Oct":32309,"Nov":23024,"Dec":25940},"total":302212},"Total Revenue":{"monthly":{"Apr":5870188,"May":4999390,"Jun":6268555,"Jul":8855488,"Aug":7791255,"Sep":7058708,"Oct":5537816,"Nov":6658975,"Dec":7664901},"total":60705275}},
+  income_budget: {"Room Night":{"monthly":{"Apr":1847,"May":1880,"Jun":1899,"Jul":1824,"Aug":1975,"Sep":1865,"Oct":1882,"Nov":1827,"Dec":1870},"total":16869},"Ammbir":{"monthly":{"Apr":198000,"May":197439,"Jun":198000,"Jul":198462,"Aug":199485,"Sep":204600,"Oct":204600,"Nov":198000,"Dec":204600},"total":1803186},"Room Services":{"monthly":{"Apr":221640,"May":225600,"Jun":227880,"Jul":218880,"Aug":237000,"Sep":223800,"Oct":263480,"Nov":255780,"Dec":261800},"total":2135860},"Purple Pitch":{"monthly":{"Apr":180000,"May":186000,"Jun":180000,"Jul":186000,"Aug":186000,"Sep":180000,"Oct":186000,"Nov":180000,"Dec":186000},"total":1650000},"Banquet":{"monthly":{"Apr":1080000,"May":960000,"Jun":1350000,"Jul":1350000,"Aug":900000,"Sep":900000,"Oct":900000,"Nov":1600000,"Dec":1600000},"total":10640000},"Laundry Revenue":{"monthly":{"Apr":7388,"May":7520,"Jun":7596,"Jul":7296,"Aug":7900,"Sep":7460,"Oct":7528,"Nov":7308,"Dec":7480},"total":67476},"Misc Revenue":{"monthly":{"Apr":5541,"May":5640,"Jun":5697,"Jul":5472,"Aug":5925,"Sep":5595,"Oct":5646,"Nov":5481,"Dec":5610},"total":50607},"Rooms Revenue":{"monthly":{"Apr":6013750,"May":6121500,"Jun":5894400,"Jul":5922400,"Aug":6356000,"Sep":6017000,"Oct":6080200,"Nov":6180200,"Dec":6313500},"total":54898950},"Food & Beverage":{"monthly":{"Apr":1679640,"May":1569039,"Jun":1955880,"Jul":1953342,"Aug":1522485,"Sep":1501800,"Oct":1554080,"Nov":2233780,"Dec":2252400},"total":16222446},"Minor Operating Dept":{"monthly":{"Apr":12929,"May":13160,"Jun":13293,"Jul":12768,"Aug":13825,"Sep":13055,"Oct":13174,"Nov":12789,"Dec":13090},"total":118083},"Total Revenue":{"monthly":{"Apr":7706319,"May":7703699,"Jun":7863573,"Jul":7888510,"Aug":7892310,"Sep":7531855,"Oct":7647454,"Nov":8426769,"Dec":8578990},"total":71239479}},
+  expense_actual: {"Food & Beverage Cost":{"monthly":{"Apr":408626,"May":451842,"Jun":212273,"Jul":467717,"Aug":163079,"Sep":44684,"Oct":126665,"Nov":294334,"Dec":309055},"total":2478275},"Payroll & Emp Reim Cost":{"monthly":{"Apr":1669616,"May":1712542,"Jun":1644720,"Jul":1447618,"Aug":1675865,"Sep":1695731,"Oct":1822613,"Nov":1769755,"Dec":1777067},"total":15215527},"HLP Cost":{"monthly":{"Apr":657694,"May":607330,"Jun":589703,"Jul":571154,"Aug":642023,"Sep":599403,"Oct":596395,"Nov":537076,"Dec":505420},"total":5306198},"Admin Expenses":{"monthly":{"Apr":82441,"May":87485,"Jun":85742,"Jul":133495,"Aug":123404,"Sep":132924,"Oct":148300,"Nov":119389,"Dec":146696},"total":1059876},"Operating Supply":{"monthly":{"Apr":284257,"May":209410,"Jun":732527,"Jul":665325,"Aug":878966,"Sep":934098,"Oct":691640,"Nov":817021,"Dec":757050},"total":5970294},"Maintenance & AMC":{"monthly":{"Apr":102879,"May":134001,"Jun":87194,"Jul":122546,"Aug":53378,"Sep":95616,"Oct":113857,"Nov":105148,"Dec":79300},"total":893919},"Finance Charges":{"monthly":{"Apr":16238,"May":19886,"Jun":19886,"Jul":83957,"Aug":8368,"Sep":10240,"Oct":952,"Nov":8233,"Dec":8233},"total":175993},"Sales & Marketing":{"monthly":{"Apr":324666,"May":340025,"Jun":720002,"Jul":1323329,"Aug":498295,"Sep":260355,"Oct":223820,"Nov":147559,"Dec":376077},"total":4214127},"Operating Expenditure":{"monthly":{"Apr":3546417,"May":3562521,"Jun":4092046,"Jul":4815140,"Aug":4043378,"Sep":3773051,"Oct":3724242,"Nov":3798515,"Dec":3958897},"total":35314208},"Operating Profit/Loss":{"monthly":{"Apr":2323771,"May":1436869,"Jun":2176509,"Jul":4040347,"Aug":3747877,"Sep":3285657,"Oct":1813573,"Nov":2860460,"Dec":3706004},"total":25391067},"Rent":{"monthly":{"Apr":2400000,"May":2400000,"Jun":2400000,"Jul":2400000,"Aug":2400000,"Sep":2400000,"Oct":2400000,"Nov":2400000,"Dec":2400000},"total":21600000},"Capex":{"monthly":{"Apr":53056,"May":53056,"Jun":0,"Jul":0,"Aug":0,"Sep":0,"Oct":26932,"Nov":0,"Dec":0},"total":133044},"Corp Overheads (10%)":{"monthly":{"Apr":587019,"May":499939,"Jun":626855,"Jul":885549,"Aug":779125,"Sep":705871,"Oct":553782,"Nov":665898,"Dec":766490},"total":6070527},"CL7 License":{"monthly":{"Apr":4200,"May":4200,"Jun":4200,"Jul":4200,"Aug":4200,"Sep":4200,"Oct":4200,"Nov":4200,"Dec":4200},"total":37800},"Total Overhead Expense":{"monthly":{"Apr":3044275,"May":2957195,"Jun":3031055,"Jul":3289749,"Aug":3183325,"Sep":3110071,"Oct":2984914,"Nov":3070098,"Dec":3170690},"total":27841372}},
+  expense_budget: {"Food & Beverage Cost":{"monthly":{"Apr":453921,"May":439414,"Jun":591973,"Jul":751872,"Aug":654929,"Sep":690308,"Oct":436048,"Nov":587001,"Dec":925338},"total":5530803},"Payroll & Emp Reim Cost":{"monthly":{"Apr":2195534,"May":2219910,"Jun":2327490,"Jul":2457246,"Aug":2457246,"Sep":2452142,"Oct":2488926,"Nov":2488926,"Dec":2488926},"total":21576344},"HLP Cost":{"monthly":{"Apr":459646,"May":459090,"Jun":478392,"Jul":502987,"Aug":487912,"Sep":493291,"Oct":453570,"Nov":453294,"Dec":505799},"total":4293980},"Admin Expenses":{"monthly":{"Apr":130026,"May":127750,"Jun":135621,"Jul":135340,"Aug":126906,"Sep":126494,"Oct":126558,"Nov":140351,"Dec":140513},"total":1189559},"Operating Supply":{"monthly":{"Apr":789490,"May":802291,"Jun":809661,"Jul":778568,"Aug":833642,"Sep":794472,"Oct":801067,"Nov":781732,"Dec":798412},"total":7189334},"Maintenance & AMC":{"monthly":{"Apr":77300,"May":77300,"Jun":77300,"Jul":77300,"Aug":77300,"Sep":77300,"Oct":79300,"Nov":79300,"Dec":79300},"total":701700},"Finance Charges":{"monthly":{"Apr":30000,"May":30000,"Jun":30000,"Jul":30000,"Aug":30000,"Sep":30000,"Oct":30000,"Nov":30000,"Dec":30000},"total":270000},"Sales & Marketing":{"monthly":{"Apr":237500,"May":267500,"Jun":237500,"Jul":215000,"Aug":230000,"Sep":225000,"Oct":230000,"Nov":235000,"Dec":240000},"total":2117500},"Operating Expenditure":{"monthly":{"Apr":4373416,"May":4423254,"Jun":4687937,"Jul":4948313,"Aug":4897935,"Sep":4889006,"Oct":4645468,"Nov":4795604,"Dec":5208287},"total":42869220},"Operating Profit/Loss":{"monthly":{"Apr":3332903,"May":3280445,"Jun":3175636,"Jul":2940197,"Aug":2994375,"Sep":2642849,"Oct":3001986,"Nov":3631165,"Dec":3370703},"total":28370259},"Rent":{"monthly":{"Apr":2400000,"May":2400000,"Jun":2400000,"Jul":2400000,"Aug":2400000,"Sep":2400000,"Oct":2400000,"Nov":2400000,"Dec":2400000},"total":21600000},"Capex":{"monthly":{"Apr":78609,"May":157219,"Jun":151524,"Jul":235828,"Aug":290687,"Sep":471656,"Oct":194022,"Nov":665402,"Dec":0},"total":2244946},"Corp Overheads (10%)":{"monthly":{"Apr":770632,"May":770370,"Jun":786357,"Jul":788851,"Aug":789231,"Sep":753186,"Oct":764745,"Nov":842677,"Dec":857899},"total":7123948},"CL7 License":{"monthly":{"Apr":4200,"May":4200,"Jun":4200,"Jul":4200,"Aug":4200,"Sep":4200,"Oct":4200,"Nov":4200,"Dec":4200},"total":37800},"Total Overhead Expense":{"monthly":{"Apr":3253441,"May":3331788,"Jun":3342081,"Jul":3428879,"Aug":3484118,"Sep":3629041,"Oct":3362968,"Nov":3912279,"Dec":3262099},"total":31006694}},
+  metrics: {
+    Occupancy: {
+      budget: {"Apr":82.09,"May":80.86,"Jun":84.40,"Jul":78.45,"Aug":84.95,"Sep":82.89,"Oct":80.95,"Nov":81.20,"Dec":80.43},
+      actual:  {"Apr":68.84,"May":55.35,"Jun":72.98,"Jul":94.02,"Aug":80.22,"Sep":83.64,"Oct":65.03,"Nov":74.31,"Dec":77.59}
+    },
+    RoomNight: {
+      budget: {"Apr":1847,"May":1880,"Jun":1899,"Jul":1824,"Aug":1975,"Sep":1865,"Oct":1882,"Nov":1827,"Dec":1870},
+      actual:  {"Apr":1549,"May":1287,"Jun":1642,"Jul":2186,"Aug":1865,"Sep":1882,"Oct":1512,"Nov":1672,"Dec":1804}
+    },
+    ARR: {
+      budget: {"Apr":3256,"May":3256,"Jun":3104,"Jul":3247,"Aug":3218,"Sep":3226,"Oct":3231,"Nov":3383,"Dec":3376},
+      actual:  {"Apr":3225,"May":3078,"Jun":3387,"Jul":3799,"Aug":3737,"Sep":3455,"Oct":3175,"Nov":3378,"Dec":3458}
+    },
+    RevPar: {
+      budget: {"Apr":2673,"May":2633,"Jun":2620,"Jul":2547,"Aug":2734,"Sep":2674,"Oct":2615,"Nov":2747,"Dec":2715},
+      actual:  {"Apr":2220,"May":1704,"Jun":2472,"Jul":3572,"Aug":2998,"Sep":2890,"Oct":2065,"Nov":2510,"Dec":2683}
+    }
+  }
+};
+
+// ════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════
+let selMonths = new Set(MONTHS);
+let currentView = 'all';
+let charts = {};
+
+// ════════════════════════════════════════════
+// HELPERS
+// ════════════════════════════════════════════
+const fmtL = v => {
+  const abs = Math.abs(v);
+  let s;
+  if (abs >= 1e7) s = (v/1e7).toFixed(2)+'Cr';
+  else if (abs >= 1e5) s = (v/1e5).toFixed(2)+'L';
+  else if (abs >= 1e3) s = (v/1e3).toFixed(1)+'K';
+  else s = v.toFixed(0);
+  return s;
+};
+const fmtFull = v => Math.round(v).toLocaleString('en-IN');
+const fmtPct = v => (v >= 0 ? '+' : '') + v.toFixed(1) + '%';
+
+function getFilteredMonths() {
+  return MONTHS.filter(m => selMonths.has(m));
+}
+
+function monthSum(obj, field) {
+  const fm = getFilteredMonths();
+  if (!obj[field]) return 0;
+  const mo = obj[field].monthly;
+  return fm.reduce((s, m) => s + (mo[m] || 0), 0);
+}
+
+function monthSumDirect(monthly) {
+  const fm = getFilteredMonths();
+  return fm.reduce((s, m) => s + (monthly[m] || 0), 0);
+}
+
+function monthAvg(monthly) {
+  const fm = getFilteredMonths();
+  const sum = fm.reduce((s, m) => s + (monthly[m] || 0), 0);
+  return fm.length ? sum / fm.length : 0;
+}
+
+function destroyChart(key) {
+  if (charts[key]) { charts[key].destroy(); charts[key] = null; }
+}
+
+const C = {
+  budget: 'rgba(100,149,220,0.7)',
+  budgetLine: '#4a90d9',
+  actual: 'rgba(0,212,170,0.75)',
+  actualLine: '#00d4aa',
+  expense_budget: 'rgba(100,149,220,0.7)',
+  expense_actual: 'rgba(255,77,106,0.75)',
+  profit_budget: 'rgba(167,139,250,0.7)',
+  profit_actual: 'rgba(34,211,238,0.75)',
+  pos: '#00d4aa',
+  neg: '#ff4d6a'
+};
+
+const baseOpts = {
+  responsive: true, maintainAspectRatio: false,
+  plugins: {
+    legend: { labels: { color: '#8fa8c8', font: { family: "'Plus Jakarta Sans'", size: 10 }, boxWidth: 10, padding: 12 } },
+    tooltip: { backgroundColor: '#112035', borderColor: '#1c2e47', borderWidth: 1, titleColor: '#e2eaf5', bodyColor: '#8fa8c8', padding: 10 }
+  },
+  scales: {
+    x: { ticks: { color: '#4a6585', font: { family: "'JetBrains Mono'", size: 9 } }, grid: { color: '#1c2e47' } },
+    y: { ticks: { color: '#4a6585', font: { family: "'JetBrains Mono'", size: 9 }, callback: v => fmtL(v) }, grid: { color: '#1c2e47' } }
+  }
+};
+
+// ════════════════════════════════════════════
+// FILTERS UI
+// ════════════════════════════════════════════
+function buildMonthPills() {
+  const c = document.getElementById('month-pills');
+  c.innerHTML = '';
+  MONTHS.forEach(m => {
+    const b = document.createElement('button');
+    b.className = 'mpill' + (selMonths.has(m) ? ' active' : '');
+    b.textContent = m;
+    b.onclick = () => toggleMonth(m, b);
+    c.appendChild(b);
+  });
+}
+
+function toggleMonth(m, btn) {
+  if (selMonths.has(m)) {
+    if (selMonths.size === 1) return; // keep at least one
+    selMonths.delete(m);
+    btn.classList.remove('active');
+  } else {
+    selMonths.add(m);
+    btn.classList.add('active');
+  }
+  updatePeriodLabel();
+  refresh();
+}
+
+function setView(v, btn) {
+  currentView = v;
+  document.querySelectorAll('.vbtn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const sections = { income: 'sec-income', expense: 'sec-expense', metrics: 'sec-metrics', profit: null };
+  ['sec-income','sec-expense','sec-metrics','sec-profit'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = (v === 'all') ? '' : (id === 'sec-' + v || (v === 'all') ? '' : 'none');
+  });
+  if (v === 'all') {
+    ['sec-income','sec-expense','sec-metrics','sec-profit'].forEach(id => { const el=document.getElementById(id); if(el) el.style.display=''; });
+  } else if (v === 'income') {
+    document.getElementById('sec-income').style.display = '';
+    document.getElementById('sec-expense').style.display = 'none';
+    document.getElementById('sec-metrics').style.display = 'none';
+    document.getElementById('sec-profit').style.display = 'none';
+  } else if (v === 'expense') {
+    document.getElementById('sec-income').style.display = 'none';
+    document.getElementById('sec-expense').style.display = '';
+    document.getElementById('sec-metrics').style.display = 'none';
+    document.getElementById('sec-profit').style.display = 'none';
+  } else if (v === 'metrics') {
+    document.getElementById('sec-income').style.display = 'none';
+    document.getElementById('sec-expense').style.display = 'none';
+    document.getElementById('sec-metrics').style.display = '';
+    document.getElementById('sec-profit').style.display = 'none';
+  }
+}
+
+function resetAll() {
+  selMonths = new Set(MONTHS);
+  buildMonthPills();
+  updatePeriodLabel();
+  refresh();
+}
+
+function updatePeriodLabel() {
+  const fm = getFilteredMonths();
+  const lbl = fm.length === MONTHS.length ? 'All Months (Apr–Dec)' : fm.join(', ');
+  document.getElementById('period-label').textContent = lbl;
+}
+
+// ════════════════════════════════════════════
+// KPIs
+// ════════════════════════════════════════════
+function updateKPIs() {
+  const fm = getFilteredMonths();
+
+  // Revenue
+  const actRev = monthSumDirect(D.income_actual['Total Revenue'].monthly);
+  const bgtRev = monthSumDirect(D.income_budget['Total Revenue'].monthly);
+  const revVar = actRev - bgtRev;
+  const revVarPct = bgtRev ? (revVar / bgtRev) * 100 : 0;
+  document.getElementById('kpi-act-rev').textContent = '₹' + fmtL(actRev);
+  const revVarEl = document.getElementById('kpi-rev-var');
+  revVarEl.textContent = (revVar >= 0 ? '+' : '') + '₹' + fmtL(revVar) + ' (' + revVarPct.toFixed(1) + '%)';
+  revVarEl.className = 'kpi-var ' + (revVar >= 0 ? 'pos' : 'neg');
+  document.getElementById('kpi-rev-bgt').textContent = 'Budget: ₹' + fmtL(bgtRev);
+  document.getElementById('kpi-rev-bar').style.width = Math.min(100, (actRev/bgtRev)*100).toFixed(0) + '%';
+
+  // Expense
+  const actExp = monthSumDirect(D.expense_actual['Operating Expenditure'].monthly);
+  const bgtExp = monthSumDirect(D.expense_budget['Operating Expenditure'].monthly);
+  const expVar = actExp - bgtExp;
+  document.getElementById('kpi-act-exp').textContent = '₹' + fmtL(actExp);
+  const expVarEl = document.getElementById('kpi-exp-var');
+  expVarEl.textContent = (expVar >= 0 ? '+' : '') + '₹' + fmtL(expVar) + ' (' + (bgtExp ? (expVar/bgtExp*100).toFixed(1) : '0') + '%)';
+  expVarEl.className = 'kpi-var ' + (expVar <= 0 ? 'pos' : 'neg');
+  document.getElementById('kpi-exp-bgt').textContent = 'Budget: ₹' + fmtL(bgtExp);
+  document.getElementById('kpi-exp-bar').style.width = Math.min(100, (actExp/bgtExp)*100).toFixed(0) + '%';
+
+  // Profit
+  const actProfit = monthSumDirect(D.expense_actual['Operating Profit/Loss'].monthly);
+  const bgtProfit = monthSumDirect(D.expense_budget['Operating Profit/Loss'].monthly);
+  const profVar = actProfit - bgtProfit;
+  document.getElementById('kpi-profit').textContent = '₹' + fmtL(actProfit);
+  const profVarEl = document.getElementById('kpi-profit-var');
+  profVarEl.textContent = (profVar >= 0 ? '+' : '') + '₹' + fmtL(profVar);
+  profVarEl.className = 'kpi-var ' + (profVar >= 0 ? 'pos' : 'neg');
+  document.getElementById('kpi-profit-bgt').textContent = 'Budget: ₹' + fmtL(bgtProfit);
+  document.getElementById('kpi-profit-bar').style.width = Math.min(100, Math.max(0, (actProfit/bgtProfit)*100)).toFixed(0) + '%';
+
+  // Occupancy
+  const actOcc = monthAvg(D.metrics.Occupancy.actual);
+  const bgtOcc = monthAvg(D.metrics.Occupancy.budget);
+  const occVar = actOcc - bgtOcc;
+  document.getElementById('kpi-occ').textContent = actOcc.toFixed(1) + '%';
+  const occVarEl = document.getElementById('kpi-occ-var');
+  occVarEl.textContent = (occVar >= 0 ? '+' : '') + occVar.toFixed(1) + ' pp';
+  occVarEl.className = 'kpi-var ' + (occVar >= 0 ? 'pos' : 'neg');
+  document.getElementById('kpi-occ-bgt').textContent = 'Budget: ' + bgtOcc.toFixed(1) + '%';
+  document.getElementById('kpi-occ-bar').style.width = Math.min(100, actOcc).toFixed(0) + '%';
+
+  // ARR
+  const actARR = monthAvg(D.metrics.ARR.actual);
+  const bgtARR = monthAvg(D.metrics.ARR.budget);
+  const arrVar = actARR - bgtARR;
+  document.getElementById('kpi-arr').textContent = '₹' + Math.round(actARR).toLocaleString('en-IN');
+  const arrVarEl = document.getElementById('kpi-arr-var');
+  arrVarEl.textContent = (arrVar >= 0 ? '+' : '') + '₹' + Math.round(arrVar).toLocaleString('en-IN');
+  arrVarEl.className = 'kpi-var ' + (arrVar >= 0 ? 'pos' : 'neg');
+  document.getElementById('kpi-arr-bgt').textContent = 'Budget: ₹' + Math.round(bgtARR).toLocaleString('en-IN');
+  document.getElementById('kpi-arr-bar').style.width = Math.min(100, (actARR/bgtARR)*100).toFixed(0) + '%';
+}
+
+// ════════════════════════════════════════════
+// REVENUE TREND CHART
+// ════════════════════════════════════════════
+function buildRevTrend() {
+  destroyChart('revTrend');
+  const fm = getFilteredMonths();
+  const bgt = fm.map(m => D.income_budget['Total Revenue'].monthly[m] || 0);
+  const act = fm.map(m => D.income_actual['Total Revenue'].monthly[m] || 0);
+  const ctx = document.getElementById('revTrendChart').getContext('2d');
+  const gA = ctx.createLinearGradient(0,0,0,200); gA.addColorStop(0,'rgba(0,212,170,0.25)'); gA.addColorStop(1,'rgba(0,212,170,0)');
+  const gB = ctx.createLinearGradient(0,0,0,200); gB.addColorStop(0,'rgba(59,139,255,0.18)'); gB.addColorStop(1,'rgba(59,139,255,0)');
+  charts['revTrend'] = new Chart(ctx, {
+    type:'line',
+    data: { labels:fm, datasets:[
+      { label:'Budget', data:bgt, borderColor:C.budgetLine, backgroundColor:gB, fill:true, tension:0.4, pointRadius:4, pointBackgroundColor:C.budgetLine, borderDash:[5,3] },
+      { label:'Actual', data:act, borderColor:C.actualLine, backgroundColor:gA, fill:true, tension:0.4, pointRadius:4, pointBackgroundColor:C.actualLine }
+    ]},
+    options: { ...baseOpts, interaction:{mode:'index',intersect:false}, plugins:{...baseOpts.plugins, tooltip:{...baseOpts.plugins.tooltip, callbacks:{label:ctx=>' ₹'+fmtL(ctx.raw)}}}}
+  });
+}
+
+// ════════════════════════════════════════════
+// REVENUE MIX DONUT
+// ════════════════════════════════════════════
+function buildRevMix() {
+  destroyChart('revMix');
+  const excludes = ['Room Night', 'Total Revenue'];
+  const categories = Object.keys(D.income_actual).filter(k => !excludes.includes(k));
+  const vals = categories.map(k => monthSumDirect(D.income_actual[k].monthly));
+  const colors = ['#3b8bff','#00d4aa','#a78bfa','#ffb547','#ff4d6a','#22d3ee','#fb923c','#34d399','#f472b6'];
+  charts['revMix'] = new Chart(document.getElementById('revMixChart').getContext('2d'), {
+    type:'doughnut',
+    data: { labels: categories.map(k=>k.length>14?k.slice(0,12)+'…':k), datasets:[{ data:vals, backgroundColor:colors, borderColor:'#0d1a2e', borderWidth:3, hoverOffset:6 }]},
+    options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'bottom', labels:{color:'#8fa8c8',font:{size:9},boxWidth:9,padding:8}}, tooltip:{...baseOpts.plugins.tooltip, callbacks:{label:ctx=>' ₹'+fmtL(ctx.raw)+' ('+((ctx.raw/vals.reduce((a,b)=>a+b,0))*100).toFixed(1)+'%)'}}}}
+  });
+}
+
+// ════════════════════════════════════════════
+// INCOME TABLE
+// ════════════════════════════════════════════
+function buildIncomeTable() {
+  const excludes = ['Room Night'];
+  const rows = Object.keys(D.income_actual).filter(k => !excludes.includes(k));
+  const maxActual = Math.max(...rows.filter(k=>k!=='Total Revenue').map(k=>monthSumDirect(D.income_actual[k].monthly)));
+  const tbody = document.getElementById('incomeTableBody');
+  tbody.innerHTML = '';
+  rows.forEach(k => {
+    const act = monthSumDirect(D.income_actual[k].monthly);
+    const bk = Object.keys(D.income_budget).find(b => b.toLowerCase().replace(/\s/g,'').includes(k.toLowerCase().replace(/\s/g,'').slice(0,5)));
+    const bgt = bk ? monthSumDirect(D.income_budget[bk].monthly) : 0;
+    const vari = act - bgt;
+    const variPct = bgt ? (vari/bgt)*100 : 0;
+    const barW = k === 'Total Revenue' ? 100 : Math.min(100, (act/maxActual)*90);
+    const isTotal = k === 'Total Revenue';
+    const tr = document.createElement('tr');
+    if (isTotal) tr.classList.add('total-row');
+    const varClass = vari >= 0 ? 'var-pos' : 'var-neg';
+    tr.innerHTML = `
+      <td>${k}</td>
+      <td class="num">₹${fmtFull(bgt)}</td>
+      <td class="num">₹${fmtFull(act)}</td>
+      <td class="num ${varClass}">${vari>=0?'+':''}₹${fmtFull(vari)}</td>
+      <td class="num ${varClass}">${variPct>=0?'+':''}${variPct.toFixed(1)}%</td>
+      <td><div style="display:flex;align-items:center;gap:6px;min-width:120px">
+        <div style="flex:1;background:var(--border);border-radius:3px;height:6px">
+          <div style="width:${barW}%;height:100%;border-radius:3px;background:${vari>=0?'var(--green)':'var(--red)'}"></div>
+        </div>
+        <span style="font-family:var(--mono);font-size:9px;color:var(--text3)">${(bgt?act/bgt*100:0).toFixed(0)}%</span>
+      </div></td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+// ════════════════════════════════════════════
+// EXPENSE TREND CHART
+// ════════════════════════════════════════════
+function buildExpTrend() {
+  destroyChart('expTrend');
+  const fm = getFilteredMonths();
+  const bgt = fm.map(m => D.expense_budget['Operating Expenditure'].monthly[m] || 0);
+  const act = fm.map(m => D.expense_actual['Operating Expenditure'].monthly[m] || 0);
+  const ctx = document.getElementById('expTrendChart').getContext('2d');
+  const gA = ctx.createLinearGradient(0,0,0,200); gA.addColorStop(0,'rgba(255,77,106,0.22)'); gA.addColorStop(1,'rgba(255,77,106,0)');
+  const gB = ctx.createLinearGradient(0,0,0,200); gB.addColorStop(0,'rgba(59,139,255,0.15)'); gB.addColorStop(1,'rgba(59,139,255,0)');
+  charts['expTrend'] = new Chart(ctx, {
+    type:'line',
+    data: { labels:fm, datasets:[
+      { label:'Budget', data:bgt, borderColor:C.budgetLine, backgroundColor:gB, fill:true, tension:0.4, pointRadius:4, borderDash:[5,3] },
+      { label:'Actual', data:act, borderColor:'#ff4d6a', backgroundColor:gA, fill:true, tension:0.4, pointRadius:4, pointBackgroundColor:'#ff4d6a' }
+    ]},
+    options: { ...baseOpts, interaction:{mode:'index',intersect:false}, plugins:{...baseOpts.plugins, tooltip:{...baseOpts.plugins.tooltip, callbacks:{label:ctx=>' ₹'+fmtL(ctx.raw)}}}}
+  });
+}
+
+// ════════════════════════════════════════════
+// EXPENSE MIX
+// ════════════════════════════════════════════
+function buildExpMix() {
+  destroyChart('expMix');
+  const excludes = ['Operating Expenditure','Operating Profit/Loss','Total Overhead Expense'];
+  const keys = Object.keys(D.expense_actual).filter(k => !excludes.includes(k));
+  const vals = keys.map(k => monthSumDirect(D.expense_actual[k].monthly));
+  const colors = ['#ff4d6a','#3b8bff','#ffb547','#a78bfa','#22d3ee','#fb923c','#34d399','#f472b6','#60a5fa','#fbbf24'];
+  charts['expMix'] = new Chart(document.getElementById('expMixChart').getContext('2d'), {
+    type:'doughnut',
+    data: { labels: keys.map(k=>k.length>16?k.slice(0,14)+'…':k), datasets:[{ data:vals, backgroundColor:colors, borderColor:'#0d1a2e', borderWidth:3, hoverOffset:6 }]},
+    options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'bottom', labels:{color:'#8fa8c8',font:{size:9},boxWidth:9,padding:6}}, tooltip:{...baseOpts.plugins.tooltip, callbacks:{label:ctx=>' ₹'+fmtL(ctx.raw)+' ('+((ctx.raw/vals.reduce((a,b)=>a+b,0))*100).toFixed(1)+'%)'}}}}
+  });
+}
+
+// ════════════════════════════════════════════
+// EXPENSE TABLE
+// ════════════════════════════════════════════
+function buildExpTable() {
+  const excludes = ['Total Overhead Expense'];
+  const keys = Object.keys(D.expense_actual).filter(k=>!excludes.includes(k));
+  const tbody = document.getElementById('expTableBody');
+  tbody.innerHTML = '';
+  keys.forEach(k => {
+    const act = monthSumDirect(D.expense_actual[k].monthly);
+    const bk = Object.keys(D.expense_budget).find(b => b.toLowerCase().replace(/\s/g,'').slice(0,6) === k.toLowerCase().replace(/\s/g,'').slice(0,6)) || k;
+    const bgt = D.expense_budget[bk] ? monthSumDirect(D.expense_budget[bk].monthly) : 0;
+    const vari = act - bgt;
+    const variPct = bgt ? (vari/bgt)*100 : 0;
+    const isOp = k.includes('Operating') || k.includes('Profit');
+    const tr = document.createElement('tr');
+    if (isOp) tr.classList.add('total-row');
+    // For expenses: under budget = good (green), over budget = bad (red)
+    // For profit: over budget = good (green)
+    let varClass = 'var-zero';
+    if (k.includes('Profit/Loss')) varClass = vari >= 0 ? 'var-pos' : 'var-neg';
+    else varClass = vari <= 0 ? 'var-pos' : 'var-neg';
+    const attainW = bgt ? Math.min(100, (act/bgt)*100) : 0;
+    tr.innerHTML = `
+      <td>${k}</td>
+      <td class="num">₹${fmtFull(bgt)}</td>
+      <td class="num">₹${fmtFull(act)}</td>
+      <td class="num ${varClass}">${vari>=0?'+':''}₹${fmtFull(vari)}</td>
+      <td class="num ${varClass}">${variPct>=0?'+':''}${variPct.toFixed(1)}%</td>
+      <td><div style="display:flex;align-items:center;gap:6px;min-width:120px">
+        <div style="flex:1;background:var(--border);border-radius:3px;height:6px">
+          <div style="width:${attainW.toFixed(0)}%;height:100%;border-radius:3px;background:${vari<=0?'var(--green)':'var(--red)'}"></div>
+        </div>
+        <span style="font-family:var(--mono);font-size:9px;color:var(--text3)">${attainW.toFixed(0)}%</span>
+      </div></td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+// ════════════════════════════════════════════
+// PROFIT CHART
+// ════════════════════════════════════════════
+function buildProfitChart() {
+  destroyChart('profit');
+  const fm = getFilteredMonths();
+  const bgt = fm.map(m => D.expense_budget['Operating Profit/Loss'].monthly[m]||0);
+  const act = fm.map(m => D.expense_actual['Operating Profit/Loss'].monthly[m]||0);
+  charts['profit'] = new Chart(document.getElementById('profitChart').getContext('2d'), {
+    type:'bar',
+    data: { labels:fm, datasets:[
+      { label:'Budget', data:bgt, backgroundColor:'rgba(59,139,255,0.5)', borderRadius:4, borderSkipped:false },
+      { label:'Actual', data:act, backgroundColor: act.map(v=>v>=0?'rgba(0,212,170,0.75)':'rgba(255,77,106,0.75)'), borderRadius:4, borderSkipped:false }
+    ]},
+    options: { ...baseOpts, interaction:{mode:'index'}, plugins:{...baseOpts.plugins, tooltip:{...baseOpts.plugins.tooltip, callbacks:{label:ctx=>' ₹'+fmtL(ctx.raw)}}}}
+  });
+}
+
+// ════════════════════════════════════════════
+// VARIANCE CHARTS
+// ════════════════════════════════════════════
+function buildRevVarChart() {
+  destroyChart('revVar');
+  const fm = getFilteredMonths();
+  const varVals = fm.map(m => (D.income_actual['Total Revenue'].monthly[m]||0) - (D.income_budget['Total Revenue'].monthly[m]||0));
+  charts['revVar'] = new Chart(document.getElementById('revVarChart').getContext('2d'), {
+    type:'bar',
+    data: { labels:fm, datasets:[{ label:'Revenue Variance', data:varVals, backgroundColor:varVals.map(v=>v>=0?'rgba(0,212,170,0.75)':'rgba(255,77,106,0.75)'), borderRadius:5, borderSkipped:false }]},
+    options: { ...baseOpts, plugins:{...baseOpts.plugins, legend:{display:false}, tooltip:{...baseOpts.plugins.tooltip, callbacks:{label:ctx=>' ₹'+fmtL(ctx.raw)}}}}
+  });
+}
+
+function buildExpVarChart() {
+  destroyChart('expVar');
+  const fm = getFilteredMonths();
+  const varVals = fm.map(m => (D.expense_actual['Operating Expenditure'].monthly[m]||0) - (D.expense_budget['Operating Expenditure'].monthly[m]||0));
+  charts['expVar'] = new Chart(document.getElementById('expVarChart').getContext('2d'), {
+    type:'bar',
+    data: { labels:fm, datasets:[{ label:'Expense Variance', data:varVals, backgroundColor:varVals.map(v=>v<=0?'rgba(0,212,170,0.75)':'rgba(255,77,106,0.75)'), borderRadius:5, borderSkipped:false }]},
+    options: { ...baseOpts, plugins:{...baseOpts.plugins, legend:{display:false}, tooltip:{...baseOpts.plugins.tooltip, callbacks:{label:ctx=>' ₹'+fmtL(ctx.raw)}}}}
+  });
+}
+
+// ════════════════════════════════════════════
+// METRICS CHARTS
+// ════════════════════════════════════════════
+function buildMetricsChart() {
+  destroyChart('metrics');
+  const fm = getFilteredMonths();
+  charts['metrics'] = new Chart(document.getElementById('metricsChart').getContext('2d'), {
+    type:'line',
+    data: { labels:fm, datasets:[
+      { label:'Occ % Budget', data:fm.map(m=>D.metrics.Occupancy.budget[m]||0), borderColor:'rgba(59,139,255,0.8)', backgroundColor:'transparent', tension:0.4, pointRadius:3, yAxisID:'y', borderDash:[4,3] },
+      { label:'Occ % Actual', data:fm.map(m=>D.metrics.Occupancy.actual[m]||0), borderColor:'#00d4aa', backgroundColor:'transparent', tension:0.4, pointRadius:4, yAxisID:'y' },
+      { label:'ARR Budget', data:fm.map(m=>D.metrics.ARR.budget[m]||0), borderColor:'rgba(167,139,250,0.8)', backgroundColor:'transparent', tension:0.4, pointRadius:3, yAxisID:'y1', borderDash:[4,3] },
+      { label:'ARR Actual', data:fm.map(m=>D.metrics.ARR.actual[m]||0), borderColor:'#ffb547', backgroundColor:'transparent', tension:0.4, pointRadius:4, yAxisID:'y1' }
+    ]},
+    options: { ...baseOpts, interaction:{mode:'index',intersect:false}, scales:{
+      x:baseOpts.scales.x,
+      y:{...baseOpts.scales.y, position:'left', ticks:{...baseOpts.scales.y.ticks, callback:v=>v+'%'}},
+      y1:{ticks:{color:'#4a6585',font:{family:"'JetBrains Mono'",size:9},callback:v=>'₹'+v},grid:{display:false},position:'right'}
+    }}
+  });
+}
+
+function buildRevParChart() {
+  destroyChart('revpar');
+  const fm = getFilteredMonths();
+  const ctx = document.getElementById('revparChart').getContext('2d');
+  const gA = ctx.createLinearGradient(0,0,0,180); gA.addColorStop(0,'rgba(255,181,71,0.2)'); gA.addColorStop(1,'rgba(255,181,71,0)');
+  charts['revpar'] = new Chart(ctx, {
+    type:'line',
+    data: { labels:fm, datasets:[
+      { label:'Budget RevPar', data:fm.map(m=>D.metrics.RevPar.budget[m]||0), borderColor:'rgba(59,139,255,0.8)', backgroundColor:'transparent', tension:0.4, pointRadius:3, borderDash:[4,3] },
+      { label:'Actual RevPar', data:fm.map(m=>D.metrics.RevPar.actual[m]||0), borderColor:'#ffb547', backgroundColor:gA, fill:true, tension:0.4, pointRadius:4, pointBackgroundColor:'#ffb547' }
+    ]},
+    options: { ...baseOpts, interaction:{mode:'index',intersect:false}, plugins:{...baseOpts.plugins, tooltip:{...baseOpts.plugins.tooltip, callbacks:{label:ctx=>' ₹'+fmtFull(ctx.raw)}}}}
+  });
+}
+
+function buildRoomNightChart() {
+  destroyChart('roomNight');
+  const fm = getFilteredMonths();
+  charts['roomNight'] = new Chart(document.getElementById('roomNightChart').getContext('2d'), {
+    type:'bar',
+    data: { labels:fm, datasets:[
+      { label:'Budget', data:fm.map(m=>D.metrics.RoomNight.budget[m]||0), backgroundColor:'rgba(59,139,255,0.5)', borderRadius:4, borderSkipped:false },
+      { label:'Actual', data:fm.map(m=>D.metrics.RoomNight.actual[m]||0), backgroundColor:'rgba(0,212,170,0.75)', borderRadius:4, borderSkipped:false }
+    ]},
+    options: { ...baseOpts, interaction:{mode:'index'}, plugins:{...baseOpts.plugins, tooltip:{...baseOpts.plugins.tooltip, callbacks:{label:ctx=>' '+Math.round(ctx.raw)+' rooms'}}}}
+  });
+}
+
+// ════════════════════════════════════════════
+// REFRESH ALL
+// ════════════════════════════════════════════
+function refresh() {
+  updateKPIs();
+  buildRevTrend();
+  buildRevMix();
+  buildIncomeTable();
+  buildExpTrend();
+  buildExpMix();
+  buildExpTable();
+  buildProfitChart();
+  buildRevVarChart();
+  buildExpVarChart();
+  buildMetricsChart();
+  buildRevParChart();
+  buildRoomNightChart();
+}
+
+// ════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════
+Chart.defaults.color = '#8fa8c8';
+Chart.defaults.font.family = "'Plus Jakarta Sans'";
+buildMonthPills();
+updatePeriodLabel();
+refresh();
+</script>
+</body>
+</html>

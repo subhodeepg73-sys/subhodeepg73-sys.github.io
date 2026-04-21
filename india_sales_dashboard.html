@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>India Sales Dashboard 2024</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#08090d;
+  --surface:#101219;
+  --surface2:#181c27;
+  --surface3:#1f2435;
+  --border:rgba(255,255,255,0.06);
+  --border2:rgba(255,255,255,0.12);
+  --border3:rgba(255,255,255,0.18);
+  --text:#dde2f0;
+  --text-muted:#6b7394;
+  --text-dim:#3a4060;
+  --blue:#4f8ef7;
+  --green:#1fc98e;
+  --orange:#f5854a;
+  --purple:#9b72f5;
+  --yellow:#f5c842;
+  --red:#f0555a;
+  --radius:14px;
+  --radius-sm:8px;
+  --transition:0.22s cubic-bezier(0.4,0,0.2,1);
+}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'Syne',sans-serif;font-size:13px;line-height:1.5;min-height:100vh;overflow-x:hidden}
+
+/* ambient glow */
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 70% 50% at 15% 5%,rgba(79,142,247,0.07) 0%,transparent 55%),radial-gradient(ellipse 50% 40% at 85% 90%,rgba(31,201,142,0.05) 0%,transparent 55%),radial-gradient(ellipse 40% 30% at 50% 50%,rgba(155,114,245,0.03) 0%,transparent 60%);pointer-events:none;z-index:0}
+
+.app{position:relative;z-index:1;display:flex;min-height:100vh}
+
+/* SIDEBAR */
+.sidebar{width:220px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:24px 0;position:sticky;top:0;height:100vh;overflow-y:auto}
+.logo{padding:0 20px 24px;border-bottom:1px solid var(--border)}
+.logo-text{font-size:15px;font-weight:700;letter-spacing:-0.3px;color:var(--text)}
+.logo-sub{font-size:10px;color:var(--text-muted);margin-top:2px;font-family:'DM Mono',monospace}
+.nav-section{padding:16px 12px 0}
+.nav-label{font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;padding:0 8px 8px;font-family:'DM Mono',monospace}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:var(--radius-sm);cursor:pointer;color:var(--text-muted);font-size:12px;font-weight:500;transition:all var(--transition);margin-bottom:2px}
+.nav-item:hover{background:var(--surface2);color:var(--text)}
+.nav-item.active{background:rgba(79,142,247,0.12);color:var(--blue);border:1px solid rgba(79,142,247,0.2)}
+.nav-icon{width:16px;height:16px;opacity:0.7}
+.sidebar-footer{margin-top:auto;padding:16px 20px;border-top:1px solid var(--border);font-size:10px;color:var(--text-dim);font-family:'DM Mono',monospace}
+
+/* MAIN */
+.main{flex:1;padding:28px 28px 60px;overflow-x:hidden}
+
+/* TOPBAR */
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;gap:16px}
+.page-title{font-size:20px;font-weight:700;letter-spacing:-0.4px}
+.topbar-right{display:flex;align-items:center;gap:10px}
+
+/* Filter pills */
+.filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px;align-items:center}
+.filter-label{font-size:11px;color:var(--text-muted);font-family:'DM Mono',monospace;margin-right:4px}
+.pill{padding:5px 14px;border-radius:20px;border:1px solid var(--border2);background:transparent;color:var(--text-muted);font-size:11px;font-family:'Syne',sans-serif;cursor:pointer;transition:all var(--transition);white-space:nowrap}
+.pill:hover{border-color:var(--border3);color:var(--text);background:var(--surface2)}
+.pill.active{background:rgba(79,142,247,0.15);border-color:rgba(79,142,247,0.4);color:var(--blue)}
+.pill.active-green{background:rgba(31,201,142,0.15);border-color:rgba(31,201,142,0.4);color:var(--green)}
+.pill.active-orange{background:rgba(245,133,74,0.15);border-color:rgba(245,133,74,0.4);color:var(--orange)}
+.filter-sep{width:1px;height:20px;background:var(--border);flex-shrink:0}
+
+/* Search */
+.search-wrap{position:relative}
+.search-input{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:7px 12px 7px 32px;color:var(--text);font-size:12px;font-family:'Syne',sans-serif;outline:none;width:200px;transition:border-color var(--transition)}
+.search-input:focus{border-color:rgba(79,142,247,0.4)}
+.search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:13px;pointer-events:none}
+
+/* KPI */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;position:relative;overflow:hidden;cursor:default;transition:all var(--transition)}
+.kpi-card:hover{border-color:var(--border2);transform:translateY(-1px)}
+.kpi-top{position:absolute;top:0;left:0;right:0;height:2px;border-radius:var(--radius) var(--radius) 0 0}
+.kpi-label{font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px;font-family:'DM Mono',monospace}
+.kpi-val{font-size:26px;font-weight:700;letter-spacing:-0.5px;font-family:'DM Mono',monospace;transition:all 0.4s ease}
+.kpi-sub{font-size:11px;color:var(--text-muted);margin-top:6px}
+.kpi-delta{font-size:10px;padding:2px 7px;border-radius:10px;margin-top:6px;display:inline-block;font-family:'DM Mono',monospace}
+.delta-up{background:rgba(31,201,142,0.12);color:var(--green)}
+.delta-down{background:rgba(240,85,90,0.12);color:var(--red)}
+
+/* Chart cards */
+.charts-grid{display:grid;gap:14px;margin-bottom:14px}
+.col-2{grid-template-columns:1fr 1fr}
+.col-3{grid-template-columns:1.6fr 1fr 1fr}
+.col-full{grid-template-columns:1fr}
+.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;transition:border-color var(--transition)}
+.chart-card:hover{border-color:var(--border2)}
+.chart-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;gap:10px}
+.chart-title{font-size:13px;font-weight:600;color:var(--text)}
+.chart-sub{font-size:10px;color:var(--text-muted);margin-top:2px;font-family:'DM Mono',monospace}
+.chart-actions{display:flex;gap:6px;flex-shrink:0}
+.chart-btn{padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text-muted);font-size:10px;cursor:pointer;transition:all var(--transition);font-family:'DM Mono',monospace}
+.chart-btn:hover{border-color:var(--border2);color:var(--text)}
+.chart-btn.active{background:rgba(79,142,247,0.15);border-color:rgba(79,142,247,0.35);color:var(--blue)}
+
+/* Legend */
+.legend{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:10px}
+.leg{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-muted);cursor:pointer;transition:color var(--transition);user-select:none}
+.leg:hover{color:var(--text)}
+.leg.hidden{opacity:0.35}
+.leg-sq{width:8px;height:8px;border-radius:2px;flex-shrink:0}
+
+/* State table */
+.state-table{width:100%;border-collapse:collapse}
+.state-table th{font-size:10px;text-transform:uppercase;letter-spacing:0.6px;color:var(--text-dim);text-align:left;padding:0 8px 10px 0;font-weight:500;border-bottom:1px solid var(--border);cursor:pointer;user-select:none}
+.state-table th:hover{color:var(--text-muted)}
+.state-table th.sort-asc::after{content:' ↑';color:var(--blue)}
+.state-table th.sort-desc::after{content:' ↓';color:var(--blue)}
+.state-table td{padding:8px 8px 8px 0;border-bottom:1px solid rgba(255,255,255,0.03);vertical-align:middle;transition:background var(--transition)}
+.state-table tr:last-child td{border-bottom:none}
+.state-table tr:hover td{background:rgba(255,255,255,0.02)}
+.state-table tr{cursor:pointer}
+.state-table tr.selected td{background:rgba(79,142,247,0.06)}
+.sname{font-size:12px;color:var(--text);font-weight:500}
+.srev{font-size:12px;font-family:'DM Mono',monospace;color:var(--text)}
+.bar-bg{height:4px;background:rgba(255,255,255,0.05);border-radius:3px;overflow:hidden;width:70px}
+.bar-fill{height:100%;border-radius:3px;transition:width 0.6s cubic-bezier(0.4,0,0.2,1)}
+.mbadge{font-size:10px;font-family:'DM Mono',monospace;padding:2px 8px;border-radius:10px;white-space:nowrap}
+.m-hi{background:rgba(31,201,142,0.12);color:var(--green)}
+.m-mid{background:rgba(79,142,247,0.12);color:var(--blue)}
+
+/* Tooltip override */
+.chart-tooltip-custom{position:fixed;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:10px 14px;pointer-events:none;font-family:'DM Mono',monospace;font-size:11px;z-index:999;transition:opacity 0.15s;box-shadow:0 8px 24px rgba(0,0,0,0.4)}
+
+/* Drilldown panel */
+.drill-panel{background:var(--surface2);border:1px solid rgba(79,142,247,0.2);border-radius:var(--radius);padding:16px 20px;margin-bottom:14px;animation:slideDown 0.3s ease;display:none}
+.drill-panel.open{display:block}
+@keyframes slideDown{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+.drill-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.drill-title{font-size:13px;font-weight:600;color:var(--blue)}
+.drill-close{background:none;border:1px solid var(--border);color:var(--text-muted);border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:'DM Mono',monospace;transition:all var(--transition)}
+.drill-close:hover{border-color:var(--border2);color:var(--text)}
+.drill-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.drill-kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px}
+.drill-kpi-label{font-size:10px;color:var(--text-muted);font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px}
+.drill-kpi-val{font-size:18px;font-weight:700;font-family:'DM Mono',monospace;color:var(--blue)}
+
+/* Animated numbers */
+@keyframes countUp{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.animate-num{animation:countUp 0.5s ease both}
+
+/* Range slider */
+.range-row{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.range-label{font-size:11px;color:var(--text-muted);font-family:'DM Mono',monospace;white-space:nowrap}
+input[type=range]{-webkit-appearance:none;appearance:none;height:3px;background:var(--surface3);border-radius:2px;outline:none;cursor:pointer;flex:1}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--blue);cursor:pointer;border:2px solid var(--surface)}
+.range-val{font-size:11px;font-family:'DM Mono',monospace;color:var(--blue);min-width:36px;text-align:right}
+
+/* Summary bar */
+.summary-bar{display:flex;gap:20px;align-items:center;padding:10px 16px;background:rgba(79,142,247,0.06);border:1px solid rgba(79,142,247,0.15);border-radius:var(--radius-sm);margin-bottom:14px;flex-wrap:wrap}
+.summary-item{font-size:11px;color:var(--text-muted);font-family:'DM Mono',monospace}
+.summary-item strong{color:var(--blue)}
+
+/* Responsive */
+@media(max-width:1100px){.col-3{grid-template-columns:1fr 1fr}}
+@media(max-width:900px){.sidebar{display:none}.kpi-grid{grid-template-columns:repeat(2,1fr)}.col-2,.col-3{grid-template-columns:1fr}}
+@media(max-width:500px){.kpi-grid{grid-template-columns:1fr 1fr}.main{padding:16px 14px 40px}}
+
+/* Fade in */
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.kpi-card{animation:fadeUp 0.4s ease both}
+.kpi-card:nth-child(1){animation-delay:0.05s}
+.kpi-card:nth-child(2){animation-delay:0.1s}
+.kpi-card:nth-child(3){animation-delay:0.15s}
+.kpi-card:nth-child(4){animation-delay:0.2s}
+.chart-card,.drill-panel{animation:fadeUp 0.5s ease both;animation-delay:0.25s}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:3px}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <div class="logo">
+      <div class="logo-text">SalesPulse</div>
+      <div class="logo-sub">India · FY 2024</div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Analytics</div>
+      <div class="nav-item active" onclick="setView('overview')">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg>
+        Overview
+      </div>
+      <div class="nav-item" onclick="setView('revenue')">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="1,12 5,7 9,9 15,3"/></svg>
+        Revenue
+      </div>
+      <div class="nav-item" onclick="setView('products')">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="8" width="3" height="7"/><rect x="6" y="5" width="3" height="10"/><rect x="11" y="2" width="3" height="13"/></svg>
+        Products
+      </div>
+      <div class="nav-item" onclick="setView('states')">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="7" r="3"/><path d="M8 1C4.7 1 2 3.7 2 7c0 4.5 6 9 6 9s6-4.5 6-9c0-3.3-2.7-6-6-6z"/></svg>
+        States
+      </div>
+    </div>
+    <div class="nav-section" style="margin-top:16px">
+      <div class="nav-label">Filters</div>
+      <div style="padding:0 8px">
+        <div class="range-row">
+          <span class="range-label">Min Rev</span>
+          <input type="range" id="minRevSlider" min="10" max="12" step="0.1" value="10" oninput="onMinRevChange(this.value)">
+          <span class="range-val" id="minRevVal">₹10Cr</span>
+        </div>
+        <div style="font-size:10px;color:var(--text-dim);font-family:'DM Mono',monospace;padding:0 0 4px">Drag to filter states by revenue</div>
+      </div>
+    </div>
+    <div class="sidebar-footer">7,500 orders · 9 states<br>10 products · 3 categories</div>
+  </nav>
+
+  <!-- MAIN -->
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <div class="page-title" id="pageTitle">Overview</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:2px;font-family:'DM Mono',monospace" id="pageDesc">All states · All categories · FY 2024</div>
+      </div>
+      <div class="topbar-right">
+        <div class="search-wrap">
+          <span class="search-icon">⌕</span>
+          <input class="search-input" type="text" id="searchInput" placeholder="Search state, product…" oninput="onSearch(this.value)">
+        </div>
+      </div>
+    </div>
+
+    <!-- FILTERS -->
+    <div class="filters">
+      <span class="filter-label">Category</span>
+      <button class="pill active" data-filter-cat="All" onclick="setCatFilter('All',this)">All</button>
+      <button class="pill" data-filter-cat="Appliances" onclick="setCatFilter('Appliances',this)">Appliances</button>
+      <button class="pill" data-filter-cat="Electronics" onclick="setCatFilter('Electronics',this)">Electronics</button>
+      <button class="pill" data-filter-cat="Accessories" onclick="setCatFilter('Accessories',this)">Accessories</button>
+      <div class="filter-sep"></div>
+      <span class="filter-label">Quarter</span>
+      <button class="pill active" data-filter-q="All" onclick="setQFilter('All',this)">All</button>
+      <button class="pill" data-filter-q="Q1" onclick="setQFilter('Q1',this)">Q1</button>
+      <button class="pill" data-filter-q="Q2" onclick="setQFilter('Q2',this)">Q2</button>
+      <button class="pill" data-filter-q="Q3" onclick="setQFilter('Q3',this)">Q3</button>
+      <button class="pill" data-filter-q="Q4" onclick="setQFilter('Q4',this)">Q4</button>
+      <div class="filter-sep"></div>
+      <button class="pill" onclick="resetAll()">↺ Reset</button>
+    </div>
+
+    <!-- SUMMARY BAR -->
+    <div class="summary-bar" id="summaryBar">
+      <div class="summary-item">Showing: <strong id="sumStates">9 states</strong></div>
+      <div class="summary-item">Revenue: <strong id="sumRev">₹100.2Cr</strong></div>
+      <div class="summary-item">Profit: <strong id="sumProfit">₹19.9Cr</strong></div>
+      <div class="summary-item">Orders: <strong id="sumOrders">7,500</strong></div>
+      <div class="summary-item">Best state: <strong id="sumBest">West Bengal</strong></div>
+    </div>
+
+    <!-- DRILLDOWN PANEL -->
+    <div class="drill-panel" id="drillPanel">
+      <div class="drill-head">
+        <div class="drill-title" id="drillTitle">State Drilldown</div>
+        <button class="drill-close" onclick="closeDrill()">✕ Close</button>
+      </div>
+      <div class="drill-kpis" id="drillKpis"></div>
+      <div style="position:relative;height:160px"><canvas id="drillChart"></canvas></div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-top" style="background:var(--blue)"></div>
+        <div class="kpi-label">Total Revenue</div>
+        <div class="kpi-val" id="kpiRev" style="color:var(--blue)">₹100.2Cr</div>
+        <div class="kpi-sub">across <span id="kpiStateCount">9</span> states</div>
+        <div class="kpi-delta delta-up" id="kpiRevDelta">▲ All states active</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-top" style="background:var(--green)"></div>
+        <div class="kpi-label">Total Profit</div>
+        <div class="kpi-val" id="kpiProfit" style="color:var(--green)">₹19.9Cr</div>
+        <div class="kpi-sub">avg margin <span id="kpiMargin">19.9</span>%</div>
+        <div class="kpi-delta delta-up">▲ Healthy margin</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-top" style="background:var(--orange)"></div>
+        <div class="kpi-label">Total Orders</div>
+        <div class="kpi-val" id="kpiOrders" style="color:var(--orange)">7,500</div>
+        <div class="kpi-sub"><span id="kpiAvgOrders">833</span> avg per state</div>
+        <div class="kpi-delta delta-up">▲ 625 avg/month</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-top" style="background:var(--purple)"></div>
+        <div class="kpi-label">Avg Order Value</div>
+        <div class="kpi-val" id="kpiAov" style="color:var(--purple)">₹1.34L</div>
+        <div class="kpi-sub">per transaction</div>
+        <div class="kpi-delta delta-up">▲ High ticket items</div>
+      </div>
+    </div>
+
+    <!-- ROW 1: Monthly + State table -->
+    <div class="charts-grid col-2">
+      <div class="chart-card">
+        <div class="chart-head">
+          <div>
+            <div class="chart-title">Monthly Revenue & Profit</div>
+            <div class="chart-sub">click a bar · toggle legend</div>
+          </div>
+          <div class="chart-actions">
+            <button class="chart-btn active" onclick="setMonthlyView('bar',this)">Bar</button>
+            <button class="chart-btn" onclick="setMonthlyView('line',this)">Line</button>
+            <button class="chart-btn" onclick="setMonthlyView('area',this)">Area</button>
+          </div>
+        </div>
+        <div class="legend">
+          <span class="leg" id="legRev" onclick="toggleDataset('monthChart',0,this)"><span class="leg-sq" style="background:var(--blue)"></span>Revenue</span>
+          <span class="leg" id="legProfit" onclick="toggleDataset('monthChart',1,this)"><span class="leg-sq" style="background:var(--green)"></span>Profit</span>
+        </div>
+        <div style="position:relative;height:240px"><canvas id="monthChart"></canvas></div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-head">
+          <div>
+            <div class="chart-title">State Performance</div>
+            <div class="chart-sub">click row to drilldown · click header to sort</div>
+          </div>
+          <div class="chart-actions">
+            <button class="chart-btn active" onclick="setSortMetric('rev',this)">Rev</button>
+            <button class="chart-btn" onclick="setSortMetric('profit',this)">Profit</button>
+            <button class="chart-btn" onclick="setSortMetric('orders',this)">Orders</button>
+          </div>
+        </div>
+        <table class="state-table" id="stateTable">
+          <thead>
+            <tr>
+              <th onclick="sortTable('name')" id="th-name">State</th>
+              <th onclick="sortTable('rev')" id="th-rev" class="sort-desc">Revenue</th>
+              <th>Bar</th>
+              <th onclick="sortTable('margin')" id="th-margin">Margin</th>
+            </tr>
+          </thead>
+          <tbody id="stateTbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ROW 2: Products + Category + Margin -->
+    <div class="charts-grid col-3">
+      <div class="chart-card">
+        <div class="chart-head">
+          <div>
+            <div class="chart-title">Products by Revenue</div>
+            <div class="chart-sub">click bar to highlight</div>
+          </div>
+          <div class="chart-actions">
+            <button class="chart-btn active" onclick="setProdSort('rev',this)">Revenue</button>
+            <button class="chart-btn" onclick="setProdSort('profit',this)">Profit</button>
+            <button class="chart-btn" onclick="setProdSort('orders',this)">Orders</button>
+          </div>
+        </div>
+        <div style="position:relative;height:240px"><canvas id="prodChart"></canvas></div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-head">
+          <div>
+            <div class="chart-title">Category Split</div>
+            <div class="chart-sub">click segment</div>
+          </div>
+        </div>
+        <div style="position:relative;height:160px"><canvas id="catChart"></canvas></div>
+        <div id="catLegend" style="margin-top:12px"></div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-head">
+          <div>
+            <div class="chart-title">Profit Margin %</div>
+            <div class="chart-sub">national avg 19.9%</div>
+          </div>
+        </div>
+        <div style="position:relative;height:240px"><canvas id="marginChart"></canvas></div>
+      </div>
+    </div>
+
+    <!-- ROW 3: Combo -->
+    <div class="charts-grid col-full">
+      <div class="chart-card">
+        <div class="chart-head">
+          <div>
+            <div class="chart-title">Orders vs Profit — State Comparison</div>
+            <div class="chart-sub">bars = orders · line = profit ₹Cr · hover for details</div>
+          </div>
+          <div class="chart-actions">
+            <button class="chart-btn active" onclick="setComboMetric('profit',this)">Profit</button>
+            <button class="chart-btn" onclick="setComboMetric('margin',this)">Margin%</button>
+            <button class="chart-btn" onclick="setComboMetric('aov',this)">AOV</button>
+          </div>
+        </div>
+        <div class="legend">
+          <span class="leg"><span class="leg-sq" style="background:var(--blue)"></span>Orders</span>
+          <span class="leg"><span class="leg-sq" style="background:var(--orange);border-radius:50%"></span><span id="comboLineLegend">Profit ₹Cr</span></span>
+        </div>
+        <div style="position:relative;height:200px"><canvas id="comboChart"></canvas></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+/* ============================================================
+   DATA
+============================================================ */
+const RAW_STATES = [
+  {name:'West Bengal',  rev:11.52, profit:2.27, orders:859, margin:19.7, q:[2.84,2.87,2.96,2.85], cats:{Appliances:5.7,Electronics:5.1,Accessories:0.7}},
+  {name:'Delhi',        rev:11.33, profit:2.24, orders:856, margin:19.8, q:[2.80,2.79,2.93,2.81], cats:{Appliances:5.6,Electronics:5.0,Accessories:0.7}},
+  {name:'Karnataka',   rev:11.28, profit:2.24, orders:845, margin:19.9, q:[2.78,2.79,2.91,2.80], cats:{Appliances:5.6,Electronics:4.9,Accessories:0.8}},
+  {name:'Tamil Nadu',  rev:11.24, profit:2.28, orders:814, margin:20.3, q:[2.77,2.78,2.91,2.78], cats:{Appliances:5.5,Electronics:5.0,Accessories:0.7}},
+  {name:'Maharashtra', rev:11.17, profit:2.21, orders:813, margin:19.8, q:[2.76,2.76,2.89,2.76], cats:{Appliances:5.5,Electronics:4.9,Accessories:0.8}},
+  {name:'Rajasthan',   rev:11.12, profit:2.23, orders:817, margin:20.1, q:[2.74,2.75,2.87,2.76], cats:{Appliances:5.5,Electronics:4.9,Accessories:0.7}},
+  {name:'Kerala',      rev:10.97, profit:2.16, orders:823, margin:19.7, q:[2.71,2.71,2.83,2.72], cats:{Appliances:5.4,Electronics:4.8,Accessories:0.8}},
+  {name:'Uttar Pradesh',rev:10.88,profit:2.18, orders:834, margin:20.0, q:[2.68,2.69,2.81,2.70], cats:{Appliances:5.4,Electronics:4.7,Accessories:0.8}},
+  {name:'Gujarat',     rev:10.72, profit:2.12, orders:839, margin:19.8, q:[2.65,2.65,2.77,2.65], cats:{Appliances:5.3,Electronics:4.7,Accessories:0.7}},
+];
+
+const RAW_PRODUCTS = [
+  {name:'Laptop',         rev:22.4, profit:4.48, orders:749, cat:'Electronics'},
+  {name:'Air Cond.',      rev:20.5, profit:4.08, orders:791, cat:'Appliances'},
+  {name:'Refrigerator',   rev:17.8, profit:3.49, orders:757, cat:'Appliances'},
+  {name:'Wash. Machine',  rev:11.5, profit:2.30, orders:750, cat:'Appliances'},
+  {name:'Tablet',         rev:9.2,  profit:1.83, orders:776, cat:'Electronics'},
+  {name:'Monitor',        rev:7.0,  profit:1.40, orders:764, cat:'Electronics'},
+  {name:'Mobile',         rev:7.0,  profit:1.39, orders:722, cat:'Electronics'},
+  {name:'Smart Watch',    rev:3.4,  profit:0.67, orders:709, cat:'Accessories'},
+  {name:'Headphones',     rev:1.0,  profit:0.21, orders:752, cat:'Accessories'},
+  {name:'Keyboard',       rev:0.5,  profit:0.10, orders:730, cat:'Accessories'},
+];
+
+const ALL_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const MONTHLY_REV  = [809.6,827.3,832.7,778.6,860.9,754.9,906.6,837.2,841.7,836.8,864.3,872.4];
+const MONTHLY_PROF = [157.0,162.6,164.5,154.5,172.1,151.2,180.1,164.8,168.1,166.9,173.7,178.9];
+const Q_MONTHS = {All:[0,1,2,3,4,5,6,7,8,9,10,11],Q1:[0,1,2],Q2:[3,4,5],Q3:[6,7,8],Q4:[9,10,11]};
+
+const COLORS = {
+  blue:'#4f8ef7', green:'#1fc98e', orange:'#f5854a',
+  purple:'#9b72f5', yellow:'#f5c842', red:'#f0555a',
+  state:['#4f8ef7','#1fc98e','#f5854a','#9b72f5','#f5c842','#f0555a','#4fcaf7','#c97cf5','#f7c948'],
+  prod:['#4f8ef7','#5b96f8','#689ef9','#74a6fb','#81aefc','#8db6fd','#9abefe','#a6c6ff','#b3ceff','#c0d6ff'],
+};
+
+/* ============================================================
+   STATE
+============================================================ */
+let state = {
+  catFilter: 'All',
+  qFilter: 'All',
+  sortCol: 'rev',
+  sortDir: -1,
+  prodSort: 'rev',
+  comboMetric: 'profit',
+  minRev: 10,
+  search: '',
+  selectedState: null,
+  monthlyType: 'bar',
+  charts: {},
+  drillChart: null,
+};
+
+/* ============================================================
+   DERIVED DATA
+============================================================ */
+function getFilteredStates() {
+  let rows = RAW_STATES.filter(s => s.rev >= state.minRev);
+  if (state.search) {
+    const q = state.search.toLowerCase();
+    rows = rows.filter(s => s.name.toLowerCase().includes(q));
+  }
+  return rows;
+}
+
+function getCatMultiplier() {
+  if (state.catFilter === 'All') return 1;
+  const catRevShare = {Appliances:0.497,Electronics:0.454,Accessories:0.049};
+  return catRevShare[state.catFilter] || 1;
+}
+
+function getQMultiplier(idx) {
+  if (state.qFilter === 'All') return 1;
+  const qShare = {Q1:3/12,Q2:3/12,Q3:3/12,Q4:3/12};
+  // slight variation per quarter
+  const qAdj = {Q1:0.97,Q2:0.95,Q3:1.04,Q4:1.04};
+  return qAdj[state.qFilter] || 1;
+}
+
+function getActiveMonthIndices() {
+  return Q_MONTHS[state.qFilter] || Q_MONTHS.All;
+}
+
+function computeKPIs() {
+  const rows = getFilteredStates();
+  const cm = getCatMultiplier();
+  const qm = state.qFilter === 'All' ? 1 : 0.25;
+  const totalRev = rows.reduce((s,r) => s + r.rev * cm * qm, 0);
+  const totalProfit = rows.reduce((s,r) => s + r.profit * cm * qm, 0);
+  const totalOrders = rows.reduce((s,r) => s + Math.round(r.orders * cm * qm), 0);
+  const margin = totalRev > 0 ? (totalProfit / totalRev * 100) : 0;
+  const best = rows.sort((a,b) => b.rev - a.rev)[0];
+  return {totalRev, totalProfit, totalOrders, margin, best, count: rows.length, rows};
+}
+
+/* ============================================================
+   CHART DEFAULTS
+============================================================ */
+Chart.defaults.color = '#6b7394';
+Chart.defaults.font.family = "'DM Mono', monospace";
+Chart.defaults.font.size = 11;
+const GRID = 'rgba(255,255,255,0.04)';
+const TICK = '#3a4060';
+
+/* ============================================================
+   MONTHLY CHART
+============================================================ */
+function buildMonthlyChart() {
+  const ctx = document.getElementById('monthChart');
+  const type = state.monthlyType === 'area' ? 'line' : state.monthlyType;
+  const isArea = state.monthlyType === 'area';
+  const idxs = getActiveMonthIndices();
+  const cm = getCatMultiplier();
+  const qm = state.qFilter === 'All' ? 1 : 0.25;
+
+  const labels = idxs.map(i => ALL_MONTHS[i]);
+  const revData = idxs.map(i => +(MONTHLY_REV[i] * cm).toFixed(1));
+  const profData = idxs.map(i => +(MONTHLY_PROF[i] * cm).toFixed(1));
+
+  if (state.charts.monthly) state.charts.monthly.destroy();
+
+  state.charts.monthly = new Chart(ctx, {
+    type,
+    data: {
+      labels,
+      datasets: [
+        {label:'Revenue (₹L)', data:revData, backgroundColor: type==='bar'?'rgba(79,142,247,0.7)':'rgba(79,142,247,0.1)', borderColor:COLORS.blue, fill:isArea, tension:0.4, borderWidth:type==='bar'?0:2, borderRadius:type==='bar'?5:0, pointRadius:type==='bar'?0:3, pointBackgroundColor:COLORS.blue},
+        {label:'Profit (₹L)',  data:profData, backgroundColor: type==='bar'?'rgba(31,201,142,0.6)':'rgba(31,201,142,0.08)', borderColor:COLORS.green, fill:isArea, tension:0.4, borderWidth:type==='bar'?0:2, borderRadius:type==='bar'?5:0, pointRadius:type==='bar'?0:3, pointBackgroundColor:COLORS.green, borderDash:type!=='bar'?[5,4]:[]}
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      onClick:(e,els)=>{ if(els.length) highlightMonth(idxs[els[0].index]); },
+      plugins:{legend:{display:false}, tooltip:{callbacks:{label:ctx=>`₹${ctx.parsed.y.toFixed(1)}L`}}},
+      scales:{
+        x:{ticks:{color:TICK, autoSkip:false}, grid:{display:false}},
+        y:{ticks:{color:TICK, callback:v=>`₹${v}L`}, grid:{color:GRID}}
+      }
+    }
+  });
+}
+
+function highlightMonth(mi) {
+  const ch = state.charts.monthly;
+  if (!ch) return;
+  ch.data.datasets.forEach((ds,di)=>{
+    ch.data.datasets[di].backgroundColor = ch.data.datasets[di].backgroundColor; // noop, just re-render
+  });
+  ch.update();
+}
+
+function setMonthlyView(type, btn) {
+  state.monthlyType = type;
+  document.querySelectorAll('.chart-btn').forEach(b => { if([...(btn.parentElement?.children||[])].includes(b)) b.classList.remove('active'); });
+  btn.classList.add('active');
+  buildMonthlyChart();
+}
+
+function toggleDataset(chartId, idx, leg) {
+  const ch = state.charts[chartId==='monthChart'?'monthly':chartId];
+  if (!ch) return;
+  const meta = ch.getDatasetMeta(idx);
+  meta.hidden = !meta.hidden;
+  ch.update();
+  leg.classList.toggle('hidden', meta.hidden);
+}
+
+/* ============================================================
+   STATE TABLE
+============================================================ */
+function buildStateTable() {
+  const rows = getFilteredStates();
+  const cm = getCatMultiplier();
+  const qm = state.qFilter === 'All' ? 1 : 0.25;
+  const sorted = [...rows].sort((a,b) => {
+    let va = a[state.sortCol] || a.rev;
+    let vb = b[state.sortCol] || b.rev;
+    return (vb - va) * state.sortDir;
+  });
+  const maxRev = Math.max(...sorted.map(s => s.rev * cm * qm));
+  const tbody = document.getElementById('stateTbody');
+  tbody.innerHTML = '';
+  sorted.forEach((s, i) => {
+    const adjRev = (s.rev * cm * qm).toFixed(2);
+    const pct = (s.rev * cm * qm / maxRev * 100).toFixed(0);
+    const isHi = s.margin >= 20;
+    const isSelected = state.selectedState === s.name;
+    tbody.innerHTML += `
+      <tr class="${isSelected?'selected':''}" onclick="drillState('${s.name}')">
+        <td><span class="sname">${s.name}</span></td>
+        <td><span class="srev">₹${adjRev}Cr</span></td>
+        <td><div class="bar-bg"><div class="bar-fill" style="width:${pct}%;background:${COLORS.state[i%COLORS.state.length]}"></div></div></td>
+        <td><span class="mbadge ${isHi?'m-hi':'m-mid'}">${s.margin}%</span></td>
+      </tr>`;
+  });
+}
+
+let tableSortDir = {name:1, rev:-1, margin:1};
+function sortTable(col) {
+  tableSortDir[col] = (tableSortDir[col] || 1) * -1;
+  state.sortCol = col;
+  state.sortDir = tableSortDir[col];
+  document.querySelectorAll('[id^=th-]').forEach(th => th.className = '');
+  const th = document.getElementById('th-'+col);
+  if (th) th.className = state.sortDir === -1 ? 'sort-desc' : 'sort-asc';
+  buildStateTable();
+}
+
+function setSortMetric(m, btn) {
+  state.sortCol = m === 'rev' ? 'rev' : m;
+  state.sortDir = -1;
+  document.querySelectorAll('.chart-btn').forEach(b => { if([...(btn.parentElement?.children||[])].includes(b)) b.classList.remove('active'); });
+  btn.classList.add('active');
+  buildStateTable();
+}
+
+/* ============================================================
+   DRILLDOWN
+============================================================ */
+function drillState(name) {
+  if (state.selectedState === name) { closeDrill(); return; }
+  state.selectedState = name;
+  buildStateTable();
+  const s = RAW_STATES.find(r => r.name === name);
+  if (!s) return;
+
+  document.getElementById('drillPanel').classList.add('open');
+  document.getElementById('drillTitle').textContent = `${name} — Drilldown`;
+
+  const cm = getCatMultiplier();
+  document.getElementById('drillKpis').innerHTML = `
+    <div class="drill-kpi"><div class="drill-kpi-label">Revenue</div><div class="drill-kpi-val">₹${(s.rev*cm).toFixed(2)}Cr</div></div>
+    <div class="drill-kpi"><div class="drill-kpi-label">Profit</div><div class="drill-kpi-val" style="color:var(--green)">₹${(s.profit*cm).toFixed(2)}Cr</div></div>
+    <div class="drill-kpi"><div class="drill-kpi-label">Orders</div><div class="drill-kpi-val" style="color:var(--orange)">${Math.round(s.orders*cm).toLocaleString()}</div></div>
+    <div class="drill-kpi"><div class="drill-kpi-label">Margin</div><div class="drill-kpi-val" style="color:var(--purple)">${s.margin}%</div></div>`;
+
+  if (state.drillChart) state.drillChart.destroy();
+  const cats = Object.keys(s.cats);
+  const catVals = cats.map(c => +(s.cats[c]*cm).toFixed(2));
+  state.drillChart = new Chart(document.getElementById('drillChart'), {
+    type:'bar',
+    data:{
+      labels: cats,
+      datasets:[{label:'Revenue ₹Cr', data:catVals, backgroundColor:[COLORS.blue,COLORS.green,COLORS.orange], borderRadius:6, borderSkipped:false}]
+    },
+    options:{responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>`₹${c.parsed.y}Cr`}}},
+      scales:{x:{ticks:{color:TICK},grid:{display:false}},y:{ticks:{color:TICK,callback:v=>`₹${v}Cr`},grid:{color:GRID}}}
+    }
+  });
+}
+
+function closeDrill() {
+  state.selectedState = null;
+  document.getElementById('drillPanel').classList.remove('open');
+  buildStateTable();
+}
+
+/* ============================================================
+   PRODUCT CHART
+============================================================ */
+function buildProdChart() {
+  const ctx = document.getElementById('prodChart');
+  const cm = getCatMultiplier();
+  let prods = [...RAW_PRODUCTS];
+  if (state.catFilter !== 'All') prods = prods.filter(p => p.cat === state.catFilter);
+  if (state.search) { const q = state.search.toLowerCase(); prods = prods.filter(p => p.name.toLowerCase().includes(q)); }
+  prods.sort((a,b) => b[state.prodSort] - a[state.prodSort]);
+
+  const labels = prods.map(p => p.name);
+  const data = prods.map(p => +(p[state.prodSort] * (state.prodSort==='orders'?1:cm)).toFixed(2));
+  const suffix = state.prodSort === 'orders' ? '' : 'Cr';
+
+  if (state.charts.prod) state.charts.prod.destroy();
+  state.charts.prod = new Chart(ctx, {
+    type:'bar',
+    data:{labels, datasets:[{label:'Value', data, backgroundColor:COLORS.prod.slice(0,prods.length), borderRadius:5, borderSkipped:false}]},
+    options:{
+      indexAxis:'y', responsive:true, maintainAspectRatio:false,
+      onClick:(e,els)=>{ if(els.length) highlightProd(els[0].index); },
+      plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>`₹${c.parsed.x}${suffix}`}}},
+      scales:{
+        x:{ticks:{color:TICK, callback:v=>`₹${v}${suffix}`}, grid:{color:GRID}},
+        y:{ticks:{color:'#a0a8c0', font:{size:11}}, grid:{display:false}}
+      }
+    }
+  });
+}
+
+function highlightProd(idx) {
+  const ch = state.charts.prod;
+  if (!ch) return;
+  const bg = ch.data.datasets[0].backgroundColor.map((c,i) => i===idx ? COLORS.blue : 'rgba(79,142,247,0.25)');
+  ch.data.datasets[0].backgroundColor = bg;
+  ch.update();
+}
+
+function setProdSort(m, btn) {
+  state.prodSort = m;
+  document.querySelectorAll('.chart-btn').forEach(b => { if([...(btn.parentElement?.children||[])].includes(b)) b.classList.remove('active'); });
+  btn.classList.add('active');
+  buildProdChart();
+}
+
+/* ============================================================
+   CATEGORY DONUT
+============================================================ */
+function buildCatChart() {
+  const ctx = document.getElementById('catChart');
+  const cm = getCatMultiplier();
+  const all = [{name:'Appliances',rev:49.8},{name:'Electronics',rev:45.5},{name:'Accessories',rev:4.9}];
+  const filtered = state.catFilter === 'All' ? all : all.filter(c => c.name === state.catFilter);
+
+  if (state.charts.cat) state.charts.cat.destroy();
+  state.charts.cat = new Chart(ctx, {
+    type:'doughnut',
+    data:{
+      labels: filtered.map(c=>c.name),
+      datasets:[{data: filtered.map(c=>+(c.rev*cm).toFixed(1)), backgroundColor:[COLORS.blue,COLORS.green,COLORS.orange].slice(0,filtered.length), hoverOffset:10, borderWidth:2, borderColor:'#101219'}]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false, cutout:'65%',
+      onClick:(e,els)=>{ if(els.length){ const lbl=filtered[els[0].index].name; setCatFilter(lbl, document.querySelector(`[data-filter-cat="${lbl}"]`)); } },
+      plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>`₹${c.parsed}Cr`}}}
+    }
+  });
+
+  const legend = document.getElementById('catLegend');
+  legend.innerHTML = filtered.map((c,i) => `<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;font-size:11px;color:var(--text-muted)"><span style="width:8px;height:8px;border-radius:2px;background:${[COLORS.blue,COLORS.green,COLORS.orange][i]};display:inline-block"></span>${c.name} <strong style="color:var(--text);font-family:'DM Mono',monospace">₹${(c.rev*cm).toFixed(1)}Cr</strong></div>`).join('');
+}
+
+/* ============================================================
+   MARGIN CHART
+============================================================ */
+function buildMarginChart() {
+  const ctx = document.getElementById('marginChart');
+  const rows = getFilteredStates().sort((a,b) => b.margin - a.margin);
+  if (state.charts.margin) state.charts.margin.destroy();
+  state.charts.margin = new Chart(ctx, {
+    type:'bar',
+    data:{
+      labels: rows.map(s => s.name.split(' ')[0]),
+      datasets:[{label:'Margin %', data:rows.map(s=>s.margin), backgroundColor:rows.map(s=>s.margin>=20?COLORS.green:COLORS.blue), borderRadius:5, borderSkipped:false}]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>`${c.parsed.y}%`}}},
+      scales:{
+        x:{ticks:{color:TICK, font:{size:10}, autoSkip:false}, grid:{display:false}},
+        y:{min:19.3, max:20.6, ticks:{color:TICK, callback:v=>`${v}%`}, grid:{color:GRID}}
+      }
+    }
+  });
+}
+
+/* ============================================================
+   COMBO CHART
+============================================================ */
+function buildComboChart() {
+  const ctx = document.getElementById('comboChart');
+  const cm = getCatMultiplier();
+  const rows = getFilteredStates().sort((a,b) => b.orders - a.orders);
+  const metricMap = {
+    profit:{fn:s=>+(s.profit*cm).toFixed(2), label:'Profit ₹Cr', suffix:'Cr'},
+    margin:{fn:s=>s.margin, label:'Margin %', suffix:'%'},
+    aov:{fn:s=>+((s.rev/s.orders)*10).toFixed(0), label:'AOV ₹K', suffix:'K'},
+  };
+  const m = metricMap[state.comboMetric];
+  document.getElementById('comboLineLegend').textContent = m.label;
+
+  if (state.charts.combo) state.charts.combo.destroy();
+  state.charts.combo = new Chart(ctx, {
+    type:'bar',
+    data:{
+      labels: rows.map(s=>s.name),
+      datasets:[
+        {type:'bar', label:'Orders', data:rows.map(s=>Math.round(s.orders*cm)), backgroundColor:'rgba(79,142,247,0.2)', borderColor:COLORS.blue, borderWidth:1, borderRadius:5, yAxisID:'y'},
+        {type:'line', label:m.label, data:rows.map(m.fn), borderColor:COLORS.orange, backgroundColor:'transparent', pointBackgroundColor:COLORS.orange, pointRadius:5, borderWidth:2, tension:0.35, yAxisID:'y2'}
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}, tooltip:{mode:'index', intersect:false}},
+      scales:{
+        x:{ticks:{color:TICK, font:{size:10}, autoSkip:false}, grid:{display:false}},
+        y:{ticks:{color:TICK}, grid:{color:GRID}, title:{display:true, text:'Orders', color:TICK, font:{size:10}}},
+        y2:{position:'right', ticks:{color:COLORS.orange, callback:v=>`${v}${m.suffix}`}, grid:{display:false}, title:{display:true, text:m.label, color:COLORS.orange, font:{size:10}}}
+      }
+    }
+  });
+}
+
+function setComboMetric(m, btn) {
+  state.comboMetric = m;
+  document.querySelectorAll('.chart-btn').forEach(b => { if([...(btn.parentElement?.children||[])].includes(b)) b.classList.remove('active'); });
+  btn.classList.add('active');
+  buildComboChart();
+}
+
+/* ============================================================
+   KPI UPDATE
+============================================================ */
+function updateKPIs() {
+  const {totalRev, totalProfit, totalOrders, margin, best, count} = computeKPIs();
+  animateNum('kpiRev', `₹${totalRev.toFixed(1)}Cr`);
+  animateNum('kpiProfit', `₹${totalProfit.toFixed(1)}Cr`);
+  animateNum('kpiOrders', totalOrders.toLocaleString());
+  animateNum('kpiMargin', margin.toFixed(1));
+  document.getElementById('kpiStateCount').textContent = count;
+  document.getElementById('kpiAvgOrders').textContent = count > 0 ? Math.round(totalOrders/count).toLocaleString() : 0;
+
+  // AOV
+  const avgRev = totalOrders > 0 ? (totalRev * 10000000 / totalOrders / 100000) : 0;
+  animateNum('kpiAov', `₹${avgRev.toFixed(2)}L`);
+
+  // Summary bar
+  document.getElementById('sumStates').textContent = `${count} states`;
+  document.getElementById('sumRev').textContent = `₹${totalRev.toFixed(1)}Cr`;
+  document.getElementById('sumProfit').textContent = `₹${totalProfit.toFixed(1)}Cr`;
+  document.getElementById('sumOrders').textContent = totalOrders.toLocaleString();
+  document.getElementById('sumBest').textContent = best ? best.name : '—';
+}
+
+function animateNum(id, val) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.remove('animate-num');
+  void el.offsetWidth;
+  el.textContent = val;
+  el.classList.add('animate-num');
+}
+
+/* ============================================================
+   FILTERS
+============================================================ */
+function setCatFilter(cat, btn) {
+  state.catFilter = cat;
+  document.querySelectorAll('[data-filter-cat]').forEach(b => b.classList.remove('active','active-green','active-orange'));
+  if (btn) btn.classList.add('active');
+  refreshAll();
+}
+
+function setQFilter(q, btn) {
+  state.qFilter = q;
+  document.querySelectorAll('[data-filter-q]').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  refreshAll();
+}
+
+function onSearch(val) {
+  state.search = val;
+  refreshAll();
+}
+
+function onMinRevChange(val) {
+  state.minRev = parseFloat(val);
+  document.getElementById('minRevVal').textContent = `₹${val}Cr`;
+  refreshAll();
+}
+
+function resetAll() {
+  state.catFilter = 'All';
+  state.qFilter = 'All';
+  state.search = '';
+  state.minRev = 10;
+  state.selectedState = null;
+  document.getElementById('searchInput').value = '';
+  document.getElementById('minRevSlider').value = 10;
+  document.getElementById('minRevVal').textContent = '₹10Cr';
+  document.querySelectorAll('[data-filter-cat]').forEach(b => b.classList.toggle('active', b.dataset.filterCat==='All'));
+  document.querySelectorAll('[data-filter-q]').forEach(b => b.classList.toggle('active', b.dataset.filterQ==='All'));
+  closeDrill();
+  refreshAll();
+}
+
+function setView(v) {
+  const titles = {overview:'Overview', revenue:'Revenue Analysis', products:'Product Analysis', states:'State Analysis'};
+  document.getElementById('pageTitle').textContent = titles[v] || v;
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+}
+
+/* ============================================================
+   REFRESH ALL
+============================================================ */
+function refreshAll() {
+  updateKPIs();
+  buildMonthlyChart();
+  buildStateTable();
+  buildProdChart();
+  buildCatChart();
+  buildMarginChart();
+  buildComboChart();
+}
+
+/* ============================================================
+   INIT
+============================================================ */
+document.addEventListener('DOMContentLoaded', () => {
+  refreshAll();
+});
+</script>
+</body>
+</html>
