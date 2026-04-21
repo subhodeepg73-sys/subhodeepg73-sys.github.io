@@ -26,6 +26,8 @@
   nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; display: flex; align-items: center; justify-content: space-between; padding: 18px 6vw; background: rgba(4,13,31,0.92); backdrop-filter: blur(14px); border-bottom: 1px solid var(--border); }
   .nav-logo { display: flex; align-items: center; gap: 10px; }
   .nav-logo-video { width: 52px; height: 52px; border-radius: 50%; overflow: hidden; object-fit: cover; display: block; background: transparent; }
+  .nav-logo-initials { width: 52px; height: 52px; border-radius: 50%; background: linear-gradient(135deg, var(--gold) 0%, var(--gold-bright) 100%); display: flex; align-items: center; justify-content: center; font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 700; color: var(--navy); flex-shrink: 0; box-shadow: 0 0 20px rgba(201,168,76,0.4); }
+  .sg-emblem-initials { width: 120px; height: 120px; border-radius: 50%; background: linear-gradient(135deg, var(--gold) 0%, var(--gold-bright) 100%); display: flex; align-items: center; justify-content: center; font-family: 'Playfair Display', serif; font-size: 48px; font-weight: 700; color: var(--navy); margin: 0 auto 28px; box-shadow: 0 0 40px rgba(201,168,76,0.35); animation: fadeDown 0.6s ease both; }
   .nav-logo span { font-family: 'Playfair Display', serif; font-size: 13px; letter-spacing: 3px; text-transform: uppercase; color: var(--gold-pale); }
   .nav-links { display: flex; gap: 32px; list-style: none; }
   .nav-links a { text-decoration: none; color: var(--text-mid); font-size: 13px; letter-spacing: 1.5px; text-transform: uppercase; transition: color 0.3s; }
@@ -181,9 +183,7 @@
 <!-- NAV -->
 <nav>
   <div class="nav-logo">
-    <video class="nav-logo-video" autoplay loop muted playsinline disablePictureInPicture>
-      <source src="logo_ani.mp4" type="video/mp4">
-    </video>
+    <div class="nav-logo-initials">SG</div>
     <span>Revenue Consultant</span>
   </div>
   <ul class="nav-links">
@@ -199,9 +199,7 @@
 <section class="hero">
   <div class="hero-bg"></div><div class="hero-glow"></div><div class="hero-grid"></div>
   <div class="hero-content">
-    <video class="sg-emblem" autoplay loop muted playsinline disablePictureInPicture>
-      <source src="logo_ani.mp4" type="video/mp4">
-    </video>
+    <div class="sg-emblem-initials">SG</div>
     <div class="hero-badge">Hotel Revenue & Sales Specialist</div>
     <h1>Transform Your Data,<br><em>Boost Your RevPAR</em></h1>
     <p class="hero-sub">Precision dashboards. Real-world hotel expertise. Measurable impact.</p>
@@ -307,7 +305,7 @@
     <div class="portfolio-item active" data-type="html"
          data-title="Budget vs Actual — Dashboard Designer"
          data-desc="An interactive dark-mode budget vs actual dashboard with revenue category breakdowns, variance charts, and KPI cards — built for at-a-glance monthly performance reviews."
-         data-tag="HTML Dashboard" data-embed="iframe" data-src="dashboard_designer.html">
+         data-tag="HTML Dashboard" data-embed="iframe" data-src="website dashboard/dashboard_designer.html">
       <div class="thumb-placeholder">
         <span class="p-icon">📊</span>
         <span class="p-label">Budget Designer Dashboard</span>
@@ -326,7 +324,7 @@
     <div class="portfolio-item active" data-type="html"
          data-title="Budget vs Actual Dashboard"
          data-desc="A comprehensive Budget vs Actual revenue dashboard with interactive charts, monthly trend lines, category-level comparisons, and automated variance calculations."
-         data-tag="HTML Dashboard" data-embed="iframe" data-src="budget_vs_actual.html">
+         data-tag="HTML Dashboard" data-embed="iframe" data-src="website dashboard/budget_vs_actual.html">
       <div class="thumb-placeholder">
         <span class="p-icon">📉</span>
         <span class="p-label">Budget vs Actual</span>
